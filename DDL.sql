@@ -11,21 +11,21 @@ CREATE TABLE users (
 );
 
 CREATE TABLE content (
-    content_id SERIAL PRIMARY KEY,
-    title VARCHAR(255) NOT NULL,
-    content_type VARCHAR(20) CHECK (type IN ('movie', 'show', 'anime')),
-    description TEXT,
-    release_date DATE,
-    genre TEXT[],
-    age_rating VARCHAR(10),
-    language VARCHAR(50),
-    duration INT,
-    director VARCHAR(100),
-    cast TEXT[],
-    streaming_info TEXT[],
-    trailer_url TEXT,
-    poster_url TEXT,
-    rating_avg FLOAT DEFAULT 0.0,
+content_id SERIAL PRIMARY KEY,
+title VARCHAR(255) NOT NULL,
+content_type VARCHAR(20) CHECK (content_type IN ('movie', 'show' , 'drama', 'anime')),
+description TEXT,
+release_date DATE,
+genre TEXT[],
+age_rating VARCHAR(10),
+language VARCHAR(50),
+duration INT,
+director VARCHAR(100),
+"cast" TEXT[], -- fixed
+streaming_info TEXT[],
+trailer_url TEXT,
+poster_url TEXT,
+rating_avg FLOAT DEFAULT 0.0
 );
 
 CREATE TABLE friends (
