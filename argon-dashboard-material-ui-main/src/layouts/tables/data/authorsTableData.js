@@ -1,3 +1,4 @@
+import React from 'react';
 /* eslint-disable react/prop-types */
 // Argon Dashboard 2 MUI components
 import ArgonBox from "components/ArgonBox";

@@ -1,3 +1,4 @@
+import React from 'react';
 function menuItem(theme) {
   const { palette, borders, transitions } = theme;
 

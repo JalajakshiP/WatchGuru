@@ -1,3 +1,4 @@
+import React from 'react';
 /**
 =========================================================
 * Argon Dashboard 2 MUI - v3.0.1
@@ -70,7 +71,7 @@ function Sidenav({ color, brand, brandName, routes, ...rest }) {
   }, [dispatch, location]);
 
   // Render all the routes from the routes.js (All the visible items on the Sidenav)
-  const renderRoutes = routes.map(({ type, name, icon, title, key, href, route }) => {
+  const renderRoutes = routes.map(({ type, name, icon, title, key, href, route, noCollapse }) => {
     let returnValue;
 
     if (type === "route") {
@@ -81,7 +82,7 @@ function Sidenav({ color, brand, brandName, routes, ...rest }) {
               name={name}
               icon={icon}
               active={key === itemName}
-              noCollapse={noCollapse}
+              noCollapse={noCollapse ?? true}
             />
           </Link>
         );

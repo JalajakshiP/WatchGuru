@@ -1,3 +1,4 @@
+import React from 'react';
 /**
 =========================================================
 * Argon Dashboard 2 MUI - v1.0.0

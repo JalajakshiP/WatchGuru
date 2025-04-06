@@ -1,3 +1,4 @@
+import React from 'react';
 function timelineItem(theme, ownerState) {
   const { borders } = theme;
   const { lastItem } = ownerState;

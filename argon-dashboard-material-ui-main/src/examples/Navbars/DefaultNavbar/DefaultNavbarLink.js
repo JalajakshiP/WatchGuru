@@ -1,3 +1,4 @@
+import React from 'react';
 /**
 =========================================================
 * Material Dashboard 2 PRO React - v2.1.0
