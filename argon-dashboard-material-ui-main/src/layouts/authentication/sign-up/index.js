@@ -1,5 +1,5 @@
 import React from "react";
-
+import { useNavigate } from "react-router-dom";
 // react-router-dom components
 import { Link } from "react-router-dom";
 
@@ -21,6 +21,12 @@ import Separator from "layouts/authentication/components/Separator";
 import bgImage from "assets/images/guru_img.jpg"; // Make sure the image exists at this path
 
 function Cover() {
+  const navigate = useNavigate(); // ✅ For redirecting to Select Genres page
+
+  const handleContinue = () => {
+    // Here, you can also validate the form before navigation if needed
+    navigate("/select-genres"); // 🔁 Redirect to Select Genres
+  };
   return (
     <CoverLayout
       title="Welcome to WatchGuru"
@@ -64,7 +70,11 @@ function Cover() {
               </ArgonTypography>
             </ArgonBox>
             <ArgonBox mt={4} mb={1}>
-              <ArgonButton variant="gradient" color="dark" fullWidth>
+              <ArgonButton 
+                component={Link}
+                to="/authentication/select-genres"
+                variant="gradient" 
+                color="dark">
                 Continue
               </ArgonButton>
             </ArgonBox>

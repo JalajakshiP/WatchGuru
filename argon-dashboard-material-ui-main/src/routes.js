@@ -44,6 +44,7 @@ import Profile from "layouts/profile";
 import SignIn from "layouts/authentication/sign-in";
 import SignUp from "layouts/authentication/sign-up";
 import HomePage from "layouts/home";
+import SelectGenres from "layouts/authentication/select-genres";
 
 // Argon Dashboard 2 MUI components
 import ArgonBox from "components/ArgonBox";
@@ -134,6 +135,15 @@ const routes = [
     component: <SignUp />,
     layout: "main",
   },
+  {
+    type: "route",
+    name: "Select Genres",
+    key: "select-genres",
+    route: "/authentication/select-genres",
+    component: <SelectGenres />,
+    layout: "main",
+  },
+  
 ];
 
 export default routes;
