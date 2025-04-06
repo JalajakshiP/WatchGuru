@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-
+import { useEffect } from "react";
+import { apiUrl } from "config/config"; 
 import React from "react";
 // react-router-dom components
 import { Link } from "react-router-dom";
@@ -18,6 +19,9 @@ import ArgonButton from "components/ArgonButton";
 // Authentication layout components
 import CoverLayout from "layouts/authentication/components/CoverLayout";
 import Separator from "layouts/authentication/components/Separator";
+
+
+
 // All available genres
 const GENRES = [
   "Art", "Biography", "Business", "Chick Lit", "Children's",
@@ -32,10 +36,17 @@ const GENRES = [
 
 function SelectGenres() {
   const location = useLocation();
-  const userId = location.state?.userId;
+  const { name, email, password, birthdate } = location.state || {};
   const navigate = useNavigate();
   const [selectedGenres, setSelectedGenres] = useState([]);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (!name || !email || !password || !birthdate) {
+      navigate("/authentication/sign-up");
+    }
+  }, []);
+  
 
   const toggleGenre = (genre) => {
     setSelectedGenres(prev =>
@@ -46,29 +57,27 @@ function SelectGenres() {
   };
 
   const handleSubmit = async () => {
-    if (selectedGenres.length === 0) {
-      setError("Please select at least one genre");
+    if (selectedGenres.length < 3) {
+      setError("Please select at least 3 genres");
       return;
     }
-
+  
     try {
-      const response = await fetch("/api/save-genres", {
+      const response = await fetch("/${apiUrl}/sign-up", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          userId,
+          name,
+          email,
+          password,
+          birthdate,
           genres: selectedGenres,
         }),
       });
-
-      if (!response.ok) {
-        throw new Error("Failed to save genres");
-      }
-
-      // Redirect to recommendations page
-      navigate("/recommendations", { state: { genres: selectedGenres } });
+  
+      if (!response.ok) throw new Error("Signup failed");
+  
+      navigate("/dashboard"); // or /recommendations if that’s your next step
     } catch (err) {
       setError(err.message);
     }

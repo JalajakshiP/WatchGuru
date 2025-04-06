@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 // react-router-dom components
 import { Link } from "react-router-dom";
@@ -23,10 +23,23 @@ import bgImage from "assets/images/guru_img.jpg"; // Make sure the image exists 
 function Cover() {
   const navigate = useNavigate(); // ✅ For redirecting to Select Genres page
 
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [birthdate, setBirthdate] = useState("");
+
   const handleContinue = () => {
-    // Here, you can also validate the form before navigation if needed
-    navigate("/select-genres"); // 🔁 Redirect to Select Genres
+    if (!name || !email || !password || !birthdate) {
+      alert("Please fill all fields.");
+      return;
+    }
+  
+    // Navigate to next page with state
+    navigate("/authentication/select-genres", {
+      state: { name, email, password, birthdate }
+    });
   };
+
   return (
     <CoverLayout
       title="Welcome to WatchGuru"
@@ -39,16 +52,16 @@ function Cover() {
         <ArgonBox pt={2} pb={3} px={3}>
           <ArgonBox component="form" role="form">
             <ArgonBox mb={2}>
-              <ArgonInput type="username" placeholder="Name" />
+              <ArgonInput type="username" placeholder="Name" value={name} onChange={e => setName(e.target.value)}/>
             </ArgonBox>
             <ArgonBox mb={2}>
-              <ArgonInput type="email" placeholder="Email" />
+              <ArgonInput type="email" placeholder="Email" value={email} onChange={e => setEmail(e.target.value)}/>
             </ArgonBox>
             <ArgonBox mb={2}>
-              <ArgonInput type="password" placeholder="Create a password" />
+              <ArgonInput type="password" placeholder="Create a password" value={password} onChange={e => setPassword(e.target.value)}/>
             </ArgonBox>
             <ArgonBox mb={2}>
-              <ArgonInput type="date" placeholder="Birthdate" />
+              <ArgonInput type="date" placeholder="Birthdate" value={birthdate} onChange={e => setBirthdate(e.target.value)}/>
             </ArgonBox>
             <ArgonBox display="flex" alignItems="center">
               <Checkbox defaultChecked />
@@ -71,8 +84,9 @@ function Cover() {
             </ArgonBox>
             <ArgonBox mt={4} mb={1}>
               <ArgonButton 
-                component={Link}
-                to="/authentication/select-genres"
+                // component={Link}
+                // to="/authentication/select-genres"
+                onClick={handleContinue}
                 variant="gradient" 
                 color="dark">
                 Continue
