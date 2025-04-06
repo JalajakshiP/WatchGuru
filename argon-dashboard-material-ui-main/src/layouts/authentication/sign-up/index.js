@@ -1,18 +1,4 @@
-import React from 'react';
-/**
-=========================================================
-* Argon Dashboard 2 MUI - v3.0.1
-=========================================================
-
-* Product Page: https://www.creative-tim.com/product/argon-dashboard-material-ui
-* Copyright 2023 Creative Tim (https://www.creative-tim.com)
-
-Coded by www.creative-tim.com
-
- =========================================================
-
-* The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-*/
+import React from "react";
 
 // react-router-dom components
 import { Link } from "react-router-dom";
@@ -29,44 +15,34 @@ import ArgonButton from "components/ArgonButton";
 
 // Authentication layout components
 import CoverLayout from "layouts/authentication/components/CoverLayout";
-import Socials from "layouts/authentication/components/Socials";
 import Separator from "layouts/authentication/components/Separator";
 
-// Images
-const bgImage =
-  "https://raw.githubusercontent.com/creativetimofficial/public-assets/master/argon-dashboard-pro/assets/img/signup-cover.jpg";
+// Import your background image
+import bgImage from "assets/images/guru_img.jpg"; // Make sure the image exists at this path
 
 function Cover() {
   return (
     <CoverLayout
-      title="Welcome!"
-      description="We are glad to see you here, please register to continue"
+      title="Welcome to WatchGuru"
+      description="Find the best watches that suit your style and time."
       image={bgImage}
       imgPosition="top"
       button={{ color: "dark", variant: "gradient" }}
     >
       <Card>
-        <ArgonBox p={3} mb={1} textAlign="center">
-          <ArgonTypography variant="h5" fontWeight="medium">
-            Register with
-          </ArgonTypography>
-        </ArgonBox>
-        <ArgonBox mb={2}>
-          <Socials />
-        </ArgonBox>
-        <ArgonBox px={12}>
-          <Separator />
-        </ArgonBox>
         <ArgonBox pt={2} pb={3} px={3}>
           <ArgonBox component="form" role="form">
             <ArgonBox mb={2}>
-              <ArgonInput placeholder="Name" />
+              <ArgonInput type="username" placeholder="Name" />
             </ArgonBox>
             <ArgonBox mb={2}>
               <ArgonInput type="email" placeholder="Email" />
             </ArgonBox>
             <ArgonBox mb={2}>
-              <ArgonInput type="password" placeholder="Password" />
+              <ArgonInput type="password" placeholder="Create a password" />
+            </ArgonBox>
+            <ArgonBox mb={2}>
+              <ArgonInput type="date" placeholder="Birthdate" />
             </ArgonBox>
             <ArgonBox display="flex" alignItems="center">
               <Checkbox defaultChecked />
@@ -75,7 +51,7 @@ function Cover() {
                 fontWeight="regular"
                 sx={{ cursor: "pointer", userSelect: "none" }}
               >
-                &nbsp;&nbsp;I agree the&nbsp;
+                &nbsp;&nbsp;I agree to the&nbsp;
               </ArgonTypography>
               <ArgonTypography
                 component="a"
@@ -89,7 +65,7 @@ function Cover() {
             </ArgonBox>
             <ArgonBox mt={4} mb={1}>
               <ArgonButton variant="gradient" color="dark" fullWidth>
-                sign up
+                Continue
               </ArgonButton>
             </ArgonBox>
             <ArgonBox mt={2}>
