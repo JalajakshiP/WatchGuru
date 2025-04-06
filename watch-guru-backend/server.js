@@ -18,3 +18,7 @@ app.listen(PORT, async () => {
   console.log(`🚀 Server running on port ${PORT}`);
   await sequelize.sync();  // Ensures DB tables exist
 });
+app.get('/', (req, res) => {
+  res.send('WatchGuru backend is running!');
+});
+

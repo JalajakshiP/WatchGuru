@@ -6,7 +6,8 @@ CREATE TABLE users (
     profile_picture TEXT DEFAULT NULL,
     bio TEXT DEFAULT NULL,
     date_joined TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    age INT NOT NULL,
+    date_of_birth DATE NOT NULL,
+    favorite_genres TEXT[] DEFAULT NULL,;
     is_kid_friendly BOOLEAN DEFAULT FALSE
 );
 
