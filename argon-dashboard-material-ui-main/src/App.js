@@ -46,7 +46,7 @@ import createCache from "@emotion/cache";
 import routes from "routes";
 
 // Argon Dashboard 2 MUI contexts
-import { useArgonController, setMiniSidenav, setOpenConfigurator } from "context";
+import { useArgonController, setMiniSidenav, setOpenConfigurator, setLayout } from "context";
 
 // Images
 import brand from "assets/images/logo-ct.png";
@@ -64,6 +64,15 @@ export default function App() {
   const [rtlCache, setRtlCache] = useState(null);
   const { pathname } = useLocation();
 
+  useEffect(() => {
+    const currentRoute = routes.find((r) => r.route === pathname);
+    if (currentRoute) {
+      if (currentRoute.layout !== layout) {
+        setLayout(dispatch, currentRoute.layout);
+      }
+    }
+  }, [pathname]);
+  
   // Cache for the rtl
   useMemo(() => {
     const cacheRtl = createCache({

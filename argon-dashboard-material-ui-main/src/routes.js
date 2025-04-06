@@ -43,6 +43,7 @@ import RTL from "layouts/rtl";
 import Profile from "layouts/profile";
 import SignIn from "layouts/authentication/sign-in";
 import SignUp from "layouts/authentication/sign-up";
+import HomePage from "layouts/home";
 
 // Argon Dashboard 2 MUI components
 import ArgonBox from "components/ArgonBox";
@@ -50,11 +51,20 @@ import ArgonBox from "components/ArgonBox";
 const routes = [
   {
     type: "route",
+    name: "Home",
+    key: "home",
+    route: "/",
+    component: <HomePage />,
+    layout: "main",
+  },
+  {
+    type: "route",
     name: "Dashboard",
     key: "dashboard",
     route: "/dashboard",
     icon: <ArgonBox component="i" color="primary" fontSize="14px" className="ni ni-tv-2" />,
     component: <Dashboard />,
+    layout: "dashboard",
   },
   {
     type: "route",
@@ -65,6 +75,7 @@ const routes = [
       <ArgonBox component="i" color="warning" fontSize="14px" className="ni ni-calendar-grid-58" />
     ),
     component: <Tables />,
+    layout: "dashboard",
   },
   {
     type: "route",
@@ -73,6 +84,7 @@ const routes = [
     route: "/billing",
     icon: <ArgonBox component="i" color="success" fontSize="14px" className="ni ni-credit-card" />,
     component: <Billing />,
+    layout: "dashboard",
   },
   {
     type: "route",
@@ -81,6 +93,7 @@ const routes = [
     route: "/virtual-reality",
     icon: <ArgonBox component="i" color="info" fontSize="14px" className="ni ni-app" />,
     component: <VirtualReality />,
+    layout: "dashboard",
   },
   {
     type: "route",
@@ -89,6 +102,7 @@ const routes = [
     route: "/rtl",
     icon: <ArgonBox component="i" color="error" fontSize="14px" className="ni ni-world-2" />,
     component: <RTL />,
+    layout: "dashboard",
   },
   { type: "title", title: "Account Pages", key: "account-pages" },
   {
@@ -98,6 +112,7 @@ const routes = [
     route: "/profile",
     icon: <ArgonBox component="i" color="dark" fontSize="14px" className="ni ni-single-02" />,
     component: <Profile />,
+    layout: "dashboard",
   },
   {
     type: "route",
@@ -108,6 +123,7 @@ const routes = [
       <ArgonBox component="i" color="warning" fontSize="14px" className="ni ni-single-copy-04" />
     ),
     component: <SignIn />,
+    layout: "main",
   },
   {
     type: "route",
@@ -116,6 +132,7 @@ const routes = [
     route: "/authentication/sign-up",
     icon: <ArgonBox component="i" color="info" fontSize="14px" className="ni ni-collection" />,
     component: <SignUp />,
+    layout: "main",
   },
 ];
 

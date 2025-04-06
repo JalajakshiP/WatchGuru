@@ -40,7 +40,7 @@ function Cover() {
   return (
     <CoverLayout
       title="Welcome!"
-      description="Use these awesome forms to login or create new account in your project for free."
+      description="We are glad to see you here, please register to continue"
       image={bgImage}
       imgPosition="top"
       button={{ color: "dark", variant: "gradient" }}
