@@ -1,5 +1,6 @@
-argon-dashboard-material-ui-main\node_modules
-argon-dashboard-material-ui-main\.env
-watch-guru-backend\node_modules
-watch-guru-backend\.env
-watch-guru-backend\package-lock.json
+argon-dashboard-material-ui-main/node_modules
+argon-dashboard-material-ui-main/.env
+
+watch-guru-backend/node_modules
+watch-guru-backend/.env
+watch-guru-backend/package-lock.json
