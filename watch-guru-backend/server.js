@@ -61,11 +61,6 @@ app.get("/", (req, res) => {
 
 app.post('/signup', async (req, res) => {
   const {name, email, password, birthdate, genres } = req.body;
-  console.log(name);
-  console.log(email);
-  console.log(password);
-  console.log(birthdate);
-  console.log(genres);
 
   // Basic validation
   if (!name || !email || !password || birthdate === undefined) {
@@ -167,15 +162,15 @@ app.post("/logout", (req, res) => {
     res.status(200).json({ message: "Logged out successfully" });
   });
 });
+
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
 });
 
 app.get("/recommendations", isAuthenticated, async (req, res) => {
   try {
-    console.log("Fetching recommendations...");
     const userId = req.session.userId;
-    console.log("User ID:", userId);
+
     // Fetch the user's favorite genres
     const userGenresResult = await pool.query(
       "SELECT favorite_genres FROM users WHERE user_id = $1",
@@ -190,7 +185,7 @@ app.get("/recommendations", isAuthenticated, async (req, res) => {
 
     // Fetch movie recommendations based on the user's favorite genres
     const recommendationsResult = await pool.query(
-      `SELECT content_id, title, poster_url, genre FROM content WHERE genre = ANY($1::text[])`,
+      `SELECT content_id, title, poster_url, genre FROM content WHERE genre && $1::text[]`,
       [userGenres]
     );
     console.log(recommendationsResult.rows);

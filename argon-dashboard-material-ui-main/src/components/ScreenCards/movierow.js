@@ -29,12 +29,12 @@ const MovieRow = ({ title, movies }) => {
             }}
           >
             <img
-              src={movie.image}
-              alt={movie.name}
+              src={movie.poster_url}
+              alt={movie.title}
               style={{ width: "100%", borderRadius: "10px" }}
             />
             <ArgonTypography variant="button" mt={1}>
-              {movie.name}
+              {movie.title}
             </ArgonTypography>
           </ArgonBox>
         ))}
