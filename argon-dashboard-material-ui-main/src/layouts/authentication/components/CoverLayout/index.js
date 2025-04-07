@@ -34,18 +34,6 @@ import Footer from "layouts/authentication/components/Footer";
 function CoverLayout({ title, description, image, imgPosition, button, children }) {
   return (
     <PageLayout>
-      <ArgonBox mt={1}>
-        <DefaultNavbar
-          action={{
-            type: "external",
-            route: "https://creative-tim.com/product/argon-dashboard-material-ui",
-            label: "Free Download",
-            ...button,
-          }}
-          transparent
-          light
-        />
-      </ArgonBox>
       <ArgonBox
         width="calc(100% - 2rem)"
         minHeight="50vh"
@@ -89,7 +77,6 @@ function CoverLayout({ title, description, image, imgPosition, button, children 
           </Grid>
         </Grid>
       </ArgonBox>
-      <Footer />
     </PageLayout>
   );
 }

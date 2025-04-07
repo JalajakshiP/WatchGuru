@@ -15,9 +15,10 @@ Coded by www.creative-tim.com
 */
 
 import { useState } from "react";
+import { apiUrl } from "config/config"; 
 
 // react-router-dom components
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 // @mui material components
 import Switch from "@mui/material/Switch";
@@ -36,9 +37,35 @@ const bgImage =
   "https://raw.githubusercontent.com/creativetimofficial/public-assets/master/argon-dashboard-pro/assets/img/signin-ill.jpg";
 
 function Illustration() {
-  const [rememberMe, setRememberMe] = useState(false);
+  const navigate = useNavigate();
 
-  const handleSetRememberMe = () => setRememberMe(!rememberMe);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+
+  const handleContinue = async () => {
+    if(!email || !password) {
+      alert("Please fill all fields.");
+      return;
+    }
+
+    try {
+      const response = await fetch(`${apiUrl}/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          password
+        }), 
+      });
+
+      if(!response.ok) throw new Error("Login failed");
+
+      navigate("/dashboard");
+    } catch (err) {
+      setError(err.message);
+    }
+  };
 
   return (
     <IllustrationLayout
@@ -53,24 +80,15 @@ function Illustration() {
     >
       <ArgonBox component="form" role="form">
         <ArgonBox mb={2}>
-          <ArgonInput type="email" placeholder="Email" size="large" />
+          <ArgonInput type="email" placeholder="Email" size="large" value={email} onChange={e => setEmail(e.target.value)} />
         </ArgonBox>
         <ArgonBox mb={2}>
-          <ArgonInput type="password" placeholder="Password" size="large" />
-        </ArgonBox>
-        <ArgonBox display="flex" alignItems="center">
-          <Switch checked={rememberMe} onChange={handleSetRememberMe} />
-          <ArgonTypography
-            variant="button"
-            fontWeight="regular"
-            onClick={handleSetRememberMe}
-            sx={{ cursor: "pointer", userSelect: "none" }}
-          >
-            &nbsp;&nbsp;Remember me
-          </ArgonTypography>
+          <ArgonInput type="password" placeholder="Password" size="large" value={password} onChange={e => setPassword(e.target.value)} />
         </ArgonBox>
         <ArgonBox mt={4} mb={1}>
-          <ArgonButton color="info" size="large" fullWidth>
+          <ArgonButton color="info" size="large" fullWidth
+            onClick={handleContinue}>
+
             Sign In
           </ArgonButton>
         </ArgonBox>

@@ -6,7 +6,7 @@ const cors = require("cors");
 const { Pool } = require("pg");
 // const { error } = require("ajv/dist/vocabularies/applicator/dependencies");
 const app = express();
-const port =3000;
+const port = 4000;
 
 // PostgreSQL connection
 // NOTE: use YOUR postgres username and password here
