@@ -116,7 +116,7 @@ const routes = [
         <Shows />
       </ProtectedRoute>
     ),
-    layout: "main",
+    layout: "dashboard",
   },
   {
     type: "route",
@@ -128,7 +128,7 @@ const routes = [
         <Movies />
       </ProtectedRoute>
     ),
-    layout: "main",
+    layout: "dashboard",
   },
   {
     type: "route",
@@ -140,7 +140,7 @@ const routes = [
         <Anime />
       </ProtectedRoute>
     ),
-    layout: "main",
+    layout: "dashboard",
   },
   {
     type: "route",
