@@ -4,17 +4,17 @@ const session = require("express-session");
 const bcrypt = require("bcrypt");
 const cors = require("cors");
 const { Pool } = require("pg");
-const { error } = require("ajv/dist/vocabularies/applicator/dependencies");
+// const { error } = require("ajv/dist/vocabularies/applicator/dependencies");
 const app = express();
-const port = 4000;
+const port =3000;
 
 // PostgreSQL connection
 // NOTE: use YOUR postgres username and password here
 const pool = new Pool({
-  user: 'test',
+  user: 'postgres',
   host: 'localhost',
   database: 'ecommerce',
-  password: 'test',
+  password: 'chocolate',
   port: 5432,
 });
 
@@ -54,8 +54,13 @@ function isAuthenticated(req, res, next) {
 // TODO: Implement user signup logic
 // return JSON object with the following fields: {username, email, password}
 // use correct status codes and messages mentioned in the lab document
+console.log("Starting backend...");
+app.get("/", (req, res) => {
+  res.send("Backend is up and running!");
+});
+
 app.post('/signup', async (req, res) => {
-  const { username, email, password, age, is_kid_friendly, favorite_genres } = req.body;
+  const { username, email, password, dob, is_kid_friendly, favorite_genres } = req.body;
 
   // Basic validation
   if (!username || !email || !password || dob === undefined) {
@@ -156,4 +161,7 @@ app.post("/logout", (req, res) => {
     res.clearCookie("connect.sid"); // Important: Clear the session cookie
     res.status(200).json({ message: "Logged out successfully" });
   });
+});
+app.listen(port, () => {
+  console.log(`Server is running on http://localhost:${port}`);
 });
