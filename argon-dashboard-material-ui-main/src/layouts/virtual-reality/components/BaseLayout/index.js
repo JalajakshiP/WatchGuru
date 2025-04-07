@@ -85,8 +85,8 @@ function BaseLayout({ children }) {
         <ArgonBox display={{ xs: "block", lg: "none" }}>
           <Sidenav
             color={sidenavColor}
-            brand={darkSidenav || darkMode ? brand : brandDark}
-            brandName="Argon Dashboard 2 PRO"
+            brand={null}
+            brandName="WatchGuru"
             routes={routes}
             onMouseEnter={handleOnMouseEnter}
             onMouseLeave={handleOnMouseLeave}
@@ -96,8 +96,8 @@ function BaseLayout({ children }) {
           <ArgonBox display={{ xs: "none", lg: "block" }}>
             <Sidenav
               color={sidenavColor}
-              brand={darkSidenav || darkMode ? brand : brandDark}
-              brandName="Argon Dashboard 2 PRO"
+              brand={null}
+              brandName="WatchGuru"
               routes={routes}
               onMouseEnter={handleOnMouseEnter}
               onMouseLeave={handleOnMouseLeave}

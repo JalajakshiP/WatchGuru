@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { apiUrl } from "config/config"; 
 import { useNavigate } from "react-router-dom";
 // react-router-dom components
 import { Link } from "react-router-dom";
@@ -15,13 +16,33 @@ import ArgonButton from "components/ArgonButton";
 
 // Authentication layout components
 import CoverLayout from "layouts/authentication/components/CoverLayout";
-import Separator from "layouts/authentication/components/Separator";
 
 // Import your background image
 import bgImage from "assets/images/guru_img.jpg"; // Make sure the image exists at this path
 
 function Cover() {
   const navigate = useNavigate(); // ✅ For redirecting to Select Genres page
+
+  useEffect(() => {
+      const checkLogin = async () => {
+        try {
+          const res = await fetch(`${apiUrl}/isLoggedIn`, {
+            method: "GET",
+            credentials: "include", // Important to send session cookie
+          });
+  
+          if (res.status === 200) {
+            // User is already logged in
+            navigate("/dashboard"); // Redirect to wherever logged-in users go
+          }
+        } catch (err) {
+          console.error("Error checking login status:", err);
+          // Do nothing, stay on home page
+        }
+      };
+  
+      checkLogin();
+    }, [navigate]);
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");

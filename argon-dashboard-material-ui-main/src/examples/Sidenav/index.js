@@ -34,7 +34,6 @@ import ArgonTypography from "components/ArgonTypography";
 
 // Argon Dashboard 2 MUI example components
 import SidenavItem from "examples/Sidenav/SidenavItem";
-import SidenavFooter from "examples/Sidenav/SidenavFooter";
 
 // Custom styles for the Sidenav
 import SidenavRoot from "examples/Sidenav/SidenavRoot";
@@ -70,8 +69,11 @@ function Sidenav({ color, brand, brandName, routes, ...rest }) {
     return () => window.removeEventListener("resize", handleMiniSidenav);
   }, [dispatch, location]);
 
+  const allowedRoutes = ["Friends", "Chats", "Drama", "Anime", "Movies", "Profile", "Logout"];
+
   // Render all the routes from the routes.js (All the visible items on the Sidenav)
-  const renderRoutes = routes.map(({ type, name, icon, title, key, href, route, noCollapse }) => {
+  const renderRoutes = routes
+  .filter((route) => allowedRoutes.includes(route.name)).map(({ type, name, icon, title, key, href, route, noCollapse }) => {
     let returnValue;
 
     if (type === "route") {
@@ -157,7 +159,6 @@ function Sidenav({ color, brand, brandName, routes, ...rest }) {
       <List>{renderRoutes}</List>
 
       <ArgonBox pt={1} mt="auto" mb={2} mx={2}>
-        <SidenavFooter />
       </ArgonBox>
     </SidenavRoot>
   );

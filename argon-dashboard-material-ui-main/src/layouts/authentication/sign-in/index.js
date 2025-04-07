@@ -16,6 +16,7 @@ Coded by www.creative-tim.com
 
 import { useState } from "react";
 import { apiUrl } from "config/config"; 
+import { useEffect } from "react";
 
 // react-router-dom components
 import { Link, useNavigate } from "react-router-dom";
@@ -38,6 +39,27 @@ const bgImage =
 
 function Illustration() {
   const navigate = useNavigate();
+
+  useEffect(() => {
+      const checkLogin = async () => {
+        try {
+          const res = await fetch(`${apiUrl}/isLoggedIn`, {
+            method: "GET",
+            credentials: "include", // Important to send session cookie
+          });
+  
+          if (res.status === 200) {
+            // User is already logged in
+            navigate("/dashboard"); // Redirect to wherever logged-in users go
+          }
+        } catch (err) {
+          console.error("Error checking login status:", err);
+          // Do nothing, stay on home page
+        }
+      };
+  
+      checkLogin();
+    }, [navigate]);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");

@@ -36,15 +36,17 @@ Coded by www.creative-tim.com
 
 // Argon Dashboard 2 MUI layouts
 import Dashboard from "layouts/dashboard";
-import Tables from "layouts/tables";
-import Billing from "layouts/billing";
-import VirtualReality from "layouts/virtual-reality";
-import RTL from "layouts/rtl";
 import Profile from "layouts/profile";
 import SignIn from "layouts/authentication/sign-in";
 import SignUp from "layouts/authentication/sign-up";
 import HomePage from "layouts/home";
 import SelectGenres from "layouts/authentication/select-genres";
+import Friends from "layouts/friends/friends";
+import Chats from "layouts/chats/chats";
+import Shows from "layouts/shows/shows";
+import Movies from "layouts/movies/movies";
+import Anime from "layouts/anime/anime";
+import Logout from "layouts/authentication/logout/logout";
 
 // Argon Dashboard 2 MUI components
 import ArgonBox from "components/ArgonBox";
@@ -65,44 +67,6 @@ const routes = [
     route: "/dashboard",
     icon: <ArgonBox component="i" color="primary" fontSize="14px" className="ni ni-tv-2" />,
     component: <Dashboard />,
-    layout: "dashboard",
-  },
-  {
-    type: "route",
-    name: "Tables",
-    key: "tables",
-    route: "/tables",
-    icon: (
-      <ArgonBox component="i" color="warning" fontSize="14px" className="ni ni-calendar-grid-58" />
-    ),
-    component: <Tables />,
-    layout: "dashboard",
-  },
-  {
-    type: "route",
-    name: "Billing",
-    key: "billing",
-    route: "/billing",
-    icon: <ArgonBox component="i" color="success" fontSize="14px" className="ni ni-credit-card" />,
-    component: <Billing />,
-    layout: "dashboard",
-  },
-  {
-    type: "route",
-    name: "Virtual Reality",
-    key: "virtual-reality",
-    route: "/virtual-reality",
-    icon: <ArgonBox component="i" color="info" fontSize="14px" className="ni ni-app" />,
-    component: <VirtualReality />,
-    layout: "dashboard",
-  },
-  {
-    type: "route",
-    name: "RTL",
-    key: "rtl",
-    route: "/rtl",
-    icon: <ArgonBox component="i" color="error" fontSize="14px" className="ni ni-world-2" />,
-    component: <RTL />,
     layout: "dashboard",
   },
   { type: "title", title: "Account Pages", key: "account-pages" },
@@ -143,7 +107,54 @@ const routes = [
     component: <SelectGenres />,
     layout: "main",
   },
-  
+  {
+    type: "route",
+    name: "Friends",
+    key: "friends",
+    route: "/friends",
+    component: <Friends />,
+    layout: "main",
+  },
+  {
+    type: "route",
+    name: "Chats",
+    key: "chats",
+    route: "/chats",
+    component: <Chats />,
+    layout: "main",
+  },
+  {
+    type: "route",
+    name: "Shows",
+    key: "shows",
+    route: "/shows",
+    component: <Shows />,
+    layout: "main",
+  },
+  {
+    type: "route",
+    name: "Movies",
+    key: "movies",
+    route: "/movies",
+    component: <Movies />,
+    layout: "main",
+  },
+  {
+    type: "route",
+    name: "Anime",
+    key: "anime",
+    route: "/anime",
+    component: <Anime />,
+    layout: "main",
+  },
+  {
+    type: "route",
+    name: "Logout",
+    key: "logout",
+    route: "/logout",
+    component: <Logout />,
+    layout: "main",
+  },
 ];
 
 export default routes;
