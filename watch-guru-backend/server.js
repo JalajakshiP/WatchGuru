@@ -195,3 +195,179 @@ app.get("/recommendations", isAuthenticated, async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 });
+
+app.get("/recommendmovies", isAuthenticated, async (req, res) => {
+  try {
+    const userId = req.session.userId;
+
+    // Fetch the user's favorite genres
+    const userGenresResult = await pool.query(
+      "SELECT favorite_genres FROM users WHERE user_id = $1",
+      [userId]
+    );
+
+    if (userGenresResult.rows.length === 0) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const userGenres = userGenresResult.rows[0].favorite_genres;
+
+    const recommendationsResult = await pool.query(
+      `SELECT content_id, title, poster_url, genre 
+       FROM content 
+       WHERE content_type = 'movie' AND genre && $1::text[]`,
+      [userGenres]
+    );
+
+    console.log(recommendationsResult.rows);
+    res.status(200).json({ data: recommendationsResult.rows });
+  } catch (error) {
+    console.error("Error fetching recommended movies:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+app.get("/recommendanimes", isAuthenticated, async (req, res) => {
+  try {
+    const userId = req.session.userId;
+
+    // Fetch the user's favorite genres
+    const userGenresResult = await pool.query(
+      "SELECT favorite_genres FROM users WHERE user_id = $1",
+      [userId]
+    );
+
+    if (userGenresResult.rows.length === 0) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const userGenres = userGenresResult.rows[0].favorite_genres;
+
+    const recommendationsResult = await pool.query(
+      `SELECT content_id, title, poster_url, genre 
+       FROM content 
+       WHERE content_type = 'anime' AND genre && $1::text[]`,
+      [userGenres]
+    );
+
+    console.log(recommendationsResult.rows);
+    res.status(200).json({ data: recommendationsResult.rows });
+  } catch (error) {
+    console.error("Error fetching recommended movies:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+app.get("/recommendshows", isAuthenticated, async (req, res) => {
+  try {
+    const userId = req.session.userId;
+
+    // Fetch the user's favorite genres
+    const userGenresResult = await pool.query(
+      "SELECT favorite_genres FROM users WHERE user_id = $1",
+      [userId]
+    );
+
+    if (userGenresResult.rows.length === 0) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const userGenres = userGenresResult.rows[0].favorite_genres;
+
+    const recommendationsResult = await pool.query(
+      `SELECT content_id, title, poster_url, genre 
+       FROM content 
+       WHERE content_type = 'show' AND genre && $1::text[]`,
+      [userGenres]
+    );
+
+    console.log(recommendationsResult.rows);
+    res.status(200).json({ data: recommendationsResult.rows });
+  } catch (error) {
+    console.error("Error fetching recommended movies:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+// Simplified friends endpoints
+app.get("/friends", isAuthenticated, async (req, res) => {
+  try {
+    const userId = req.session.userId;
+    
+    // Current friends
+    const friends = await pool.query(
+      `SELECT u.user_id, u.username, u.profile_picture 
+       FROM friends f JOIN users u ON 
+       (f.user_id = u.user_id OR f.friend_id = u.user_id) 
+       WHERE (f.user_id = $1 OR f.friend_id = $1) 
+       AND f.status = 'accepted' 
+       AND u.user_id != $1`,
+      [userId]
+    );
+
+    // Friend requests
+    const requests = await pool.query(
+      `SELECT u.user_id, u.username, u.profile_picture, f.created_at 
+       FROM friends f JOIN users u ON f.user_id = u.user_id 
+       WHERE f.friend_id = $1 AND f.status = 'pending'`,
+      [userId]
+    );
+
+    // Suggestions (friends of friends)
+    const suggestions = await pool.query(
+      `SELECT DISTINCT u.user_id, u.username, u.profile_picture 
+       FROM friends f1 
+       JOIN friends f2 ON f1.friend_id = f2.user_id 
+       JOIN users u ON f2.friend_id = u.user_id 
+       WHERE f1.user_id = $1 
+       AND f2.friend_id != $1 
+       AND NOT EXISTS (
+         SELECT 1 FROM friends 
+         WHERE (user_id = $1 AND friend_id = f2.friend_id) 
+         OR (user_id = f2.friend_id AND friend_id = $1)
+       )
+       LIMIT 10`,
+      [userId]
+    );
+
+    res.status(200).json({
+      friends: friends.rows,
+      requests: requests.rows,
+      suggestions: suggestions.rows
+    });
+  } catch (error) {
+    console.error("Error fetching friends data:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+// Keep existing friend request endpoints
+app.post("/send-friend-request", isAuthenticated, async (req, res) => {
+  // ... existing implementation ...
+});
+
+app.post("/respond-friend-request", isAuthenticated, async (req, res) => {
+  // ... existing implementation ...
+});
+
+// Search users endpoint
+app.get("/search-users", isAuthenticated, async (req, res) => {
+  try {
+    const { q } = req.query;
+    const userId = req.session.userId;
+    
+    const results = await pool.query(
+      `SELECT user_id, username, profile_picture 
+       FROM users 
+       WHERE username ILIKE $1 
+       AND user_id != $2
+       LIMIT 10`,
+      [`%${q}%`, userId]
+    );
+
+    res.status(200).json(results.rows);
+  } catch (error) {
+    console.error("Error searching users:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});

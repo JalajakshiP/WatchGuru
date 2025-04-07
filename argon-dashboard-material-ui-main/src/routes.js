@@ -113,7 +113,7 @@ const routes = [
     key: "friends",
     route: "/friends",
     component: <Friends />,
-    layout: "main",
+    layout: "dashboard",
   },
   {
     type: "route",
@@ -129,7 +129,7 @@ const routes = [
     key: "shows",
     route: "/shows",
     component: <Shows />,
-    layout: "main",
+    layout: "dashboard",
   },
   {
     type: "route",
@@ -137,7 +137,7 @@ const routes = [
     key: "movies",
     route: "/movies",
     component: <Movies />,
-    layout: "main",
+    layout: "dashboard",
   },
   {
     type: "route",
@@ -145,7 +145,7 @@ const routes = [
     key: "anime",
     route: "/anime",
     component: <Anime />,
-    layout: "main",
+    layout: "dashboard",
   },
   {
     type: "route",
