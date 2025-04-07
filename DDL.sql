@@ -36,3 +36,14 @@ CREATE TABLE friends (
     status VARCHAR(20) CHECK (status IN ('pending', 'accepted', 'blocked')) DEFAULT 'pending',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- chats 
+CREATE TABLE messages (
+  message_id SERIAL PRIMARY KEY,
+  sender_id INTEGER REFERENCES users(user_id),
+  receiver_id INTEGER REFERENCES users(user_id),
+  message TEXT NOT NULL,
+  timestamp TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+  is_read BOOLEAN DEFAULT FALSE
+);
+-- chats
