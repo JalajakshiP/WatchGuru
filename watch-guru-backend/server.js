@@ -13,8 +13,8 @@ const port =3000;
 const pool = new Pool({
   user: 'postgres',
   host: 'localhost',
-  database: 'ecommerce',
-  password: 'chocolate',
+  database: 'watchguru',
+  password: 'Mahakkidata',
   port: 5432,
 });
 
@@ -25,7 +25,7 @@ app.use(express.json());
 // to use this backend API
 app.use(
   cors({
-    origin: "http://localhost:3000",
+    origin: "http://localhost:3001",
     credentials: true,
   })
 );
@@ -60,20 +60,25 @@ app.get("/", (req, res) => {
 });
 
 app.post('/signup', async (req, res) => {
-  const { username, email, password, dob, is_kid_friendly, favorite_genres } = req.body;
+  const {name, email, password, birthdate, genres } = req.body;
+  console.log(name);
+  console.log(email);
+  console.log(password);
+  console.log(birthdate);
+  console.log(genres);
 
   // Basic validation
-  if (!username || !email || !password || dob === undefined) {
+  if (!name || !email || !password || birthdate === undefined) {
     return res.status(400).json({ message: "Error: All fields are required (username, email, password, date of birth)." });
   }
-  if (!favorite_genres || !Array.isArray(favorite_genres) || favorite_genres.length < 3) {
+  if (!genres || !Array.isArray(genres) || genres.length < 3) {
     return res.status(400).json({ message: "Please select at least 3 favorite genres." });
   }
   try {
     // Check for existing email or username
     const existingUser = await pool.query(
       "SELECT * FROM users WHERE email = $1 OR username = $2",
-      [email.toLowerCase(), username]
+      [email.toLowerCase(), name]
     );
 
     if (existingUser.rows.length > 0) {
@@ -83,15 +88,15 @@ app.post('/signup', async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const newUser = await pool.query(
-      `INSERT INTO users (username, email, password_hash, age, is_kid_friendly, favorite_genres)
-       VALUES ($1, $2, $3, $4, $5, $6)
+      `INSERT INTO users (username, email, password_hash, date_of_birth, favorite_genres)
+       VALUES ($1, $2, $3, $4, $5)
        RETURNING user_id`,
-      [username, email.toLowerCase(), hashedPassword, date_of_birth, is_kid_friendly || false, favorite_genres]
+      [name, email.toLowerCase(), hashedPassword, birthdate, genres]
     );
 
     req.session.userId = newUser.rows[0].user_id;
 
-    res.status(201).json({ message: "User registered successfully" });
+    res.status(200).json({ message: "User registered successfully" });
   } catch (error) {
     console.error("Signup Error:", error);
     res.status(500).json({ message: "Internal server error" });

@@ -63,7 +63,7 @@ function SelectGenres() {
     }
   
     try {
-      const response = await fetch("/${apiUrl}/sign-up", {
+      const response = await fetch(`${apiUrl}/signup`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
