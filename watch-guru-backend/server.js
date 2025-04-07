@@ -47,7 +47,7 @@ app.use(
 // TODO: Implement authentication middleware
 // Redirect unauthenticated users to the login page with respective status code
 function isAuthenticated(req, res, next) {
-  req.session.userId ? next() : res.status(400).send({ message: "Unauthorized" });
+  req.session.userId ? next() : res.status(400).json({ message: "Unauthorized" });
 
 }
 
@@ -169,4 +169,34 @@ app.post("/logout", (req, res) => {
 });
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
+});
+
+app.get("/recommendations", isAuthenticated, async (req, res) => {
+  try {
+    console.log("Fetching recommendations...");
+    const userId = req.session.userId;
+    console.log("User ID:", userId);
+    // Fetch the user's favorite genres
+    const userGenresResult = await pool.query(
+      "SELECT favorite_genres FROM users WHERE user_id = $1",
+      [userId]
+    );
+
+    if (userGenresResult.rows.length === 0) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const userGenres = userGenresResult.rows[0].favorite_genres;
+
+    // Fetch movie recommendations based on the user's favorite genres
+    const recommendationsResult = await pool.query(
+      `SELECT content_id, title, poster_url, genre FROM content WHERE genre = ANY($1::text[])`,
+      [userGenres]
+    );
+    console.log(recommendationsResult.rows);
+    res.status(200).json({data: recommendationsResult.rows});
+  } catch (error) {
+    console.error("Error fetching recommendations:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
 });
