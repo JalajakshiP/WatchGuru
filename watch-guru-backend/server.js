@@ -25,7 +25,7 @@ app.use(express.json());
 // to use this backend API
 app.use(
   cors({
-    origin: "http://localhost:3001",
+    origin: "http://localhost:3000",
     credentials: true,
   })
 );
