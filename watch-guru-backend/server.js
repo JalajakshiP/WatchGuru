@@ -219,8 +219,31 @@ app.get("/recommendmovies", isAuthenticated, async (req, res) => {
       [userGenres]
     );
 
-    console.log(recommendationsResult.rows);
-    res.status(200).json({ data: recommendationsResult.rows });
+    const recommendedMovies = recommendationsResult.rows;
+    const recommendedIds = recommendedMovies.map((movie) => movie.content_id);
+
+    let othersResult;
+    if (recommendedIds.length > 0) {
+
+      othersResult = await pool.query(
+        `SELECT content_id, title, poster_url, genre
+         FROM content
+         WHERE content_type = 'movie' AND content_id != ALL($1::int[])`,
+        [recommendedIds]
+      );
+    } else {
+      // If no recommended IDs, just fetch all movies
+      othersResult = await pool.query(
+        `SELECT content_id, title, poster_url, genre 
+        FROM content WHERE content_type = 'movie'`
+      );
+    }
+    const otherMovies = othersResult.rows;
+    // console.log(recommendationsResult.rows);
+    res.status(200).json({ 
+      recommended: recommendedMovies,
+      others: otherMovies,
+     });
   } catch (error) {
     console.error("Error fetching recommended movies:", error);
     res.status(500).json({ message: "Internal server error" });
@@ -250,10 +273,33 @@ app.get("/recommendanimes", isAuthenticated, async (req, res) => {
       [userGenres]
     );
 
-    console.log(recommendationsResult.rows);
-    res.status(200).json({ data: recommendationsResult.rows });
+    const recommendedAnimes = recommendationsResult.rows;
+    const recommendedIds = recommendedAnimes.map((anime) => anime.content_id);
+
+    let othersResult;
+    if (recommendedIds.length > 0) {
+
+      othersResult = await pool.query(
+        `SELECT content_id, title, poster_url, genre
+         FROM content
+         WHERE content_type = 'anime' AND content_id != ALL($1::int[])`,
+        [recommendedIds]
+      );
+    } else {
+      // If no recommended IDs, just fetch all movies
+      othersResult = await pool.query(
+        `SELECT content_id, title, poster_url, genre 
+        FROM content WHERE content_type = 'anime'`
+      );
+    }
+    const otherAnimes = othersResult.rows;
+    // console.log(recommendationsResult.rows);
+    res.status(200).json({ 
+      recommended: recommendedAnimes,
+      others: otherAnimes,
+     });
   } catch (error) {
-    console.error("Error fetching recommended movies:", error);
+    console.error("Error fetching recommended animes:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 });
@@ -277,12 +323,35 @@ app.get("/recommendshows", isAuthenticated, async (req, res) => {
     const recommendationsResult = await pool.query(
       `SELECT content_id, title, poster_url, genre 
        FROM content 
-       WHERE content_type = 'show' AND genre && $1::text[]`,
+       WHERE content_type = 'movie' AND genre && $1::text[]`,
       [userGenres]
     );
 
-    console.log(recommendationsResult.rows);
-    res.status(200).json({ data: recommendationsResult.rows });
+    const recommendedShows = recommendationsResult.rows;
+    const recommendedIds = recommendedShows.map((show) => show.content_id);
+
+    let othersResult;
+    if (recommendedIds.length > 0) {
+
+      othersResult = await pool.query(
+        `SELECT content_id, title, poster_url, genre
+         FROM content
+         WHERE content_type = 'show' AND content_id != ALL($1::int[])`,
+        [recommendedIds]
+      );
+    } else {
+      // If no recommended IDs, just fetch all movies
+      othersResult = await pool.query(
+        `SELECT content_id, title, poster_url, genre 
+        FROM content WHERE content_type = 'show'`
+      );
+    }
+    const otherMovies = othersResult.rows;
+    // console.log(recommendationsResult.rows);
+    res.status(200).json({ 
+      recommended: recommendedShows,
+      others: otherMovies,
+     });
   } catch (error) {
     console.error("Error fetching recommended movies:", error);
     res.status(500).json({ message: "Internal server error" });

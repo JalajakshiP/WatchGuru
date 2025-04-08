@@ -8,7 +8,9 @@ import MovieCard from "components/ScreenCards/moviecard"; // import your updated
 import { apiUrl } from "config/config";
 
 function MoviesList() {
-  const [movies, setMovies] = useState([]);
+  const [recommendedMovies, setRecommendedMovies] = useState([]);
+  const [otherMovies, setOtherMovies] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     const fetchMovies = async () => {
@@ -23,7 +25,8 @@ function MoviesList() {
         }
 
         const result = await response.json();
-        setMovies(result.data); // access .data from your response
+        setRecommendedMovies(result.recommended); // access .data from your response
+        setOtherMovies(result.others);
       } catch (error) {
         console.error("Error fetching content:", error);
       }
@@ -34,14 +37,37 @@ function MoviesList() {
 
   return (
     <DashboardLayout>
-      <DashboardNavbar />
+      <DashboardNavbar setSearchQuery={setSearchQuery} />
       <ArgonBox py={3} px={2} sx={{ backgroundColor: "#121212", minHeight: "100vh" }}>
-        <ArgonTypography variant="h4" color="white" mb={4}>
+        <ArgonTypography variant="h4" color="white" mb={3}>
+          Movies for You
+        </ArgonTypography>
+        <Grid container spacing={2} mb={5}>
+          {recommendedMovies
+          .filter((movie) =>
+            movie.title.toLowerCase().includes(searchQuery.toLowerCase())
+          )
+          .map((movie, index) => (
+            <Grid item xs={6} sm={4} md={3} lg={2.4} key={`rec-${index}`}>
+              <MovieCard
+                image={movie.poster_url}
+                title={movie.title}
+                genres={movie.genre}
+              />
+            </Grid>
+          ))}
+        </Grid>
+
+        <ArgonTypography variant="h4" color="white" mb={3}>
           Explore More Movies
         </ArgonTypography>
         <Grid container spacing={2}>
-          {movies.map((movie, index) => (
-            <Grid item xs={6} sm={4} md={3} lg={2.4} key={index}>
+          {otherMovies
+          .filter((movie) =>
+            movie.title.toLowerCase().includes(searchQuery.toLowerCase())
+          )
+          .map((movie, index) => (
+            <Grid item xs={6} sm={4} md={3} lg={2.4} key={`other-${index}`}>
               <MovieCard
                 image={movie.poster_url}
                 title={movie.title}

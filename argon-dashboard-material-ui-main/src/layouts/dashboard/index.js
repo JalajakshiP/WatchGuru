@@ -9,6 +9,8 @@ import { apiUrl } from "config/config";
 
 function Default() {
   const [movies, setMovies] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  
 
   useEffect(() => {
     const fetchMovies = async () => {
@@ -34,13 +36,17 @@ function Default() {
 
   return (
     <DashboardLayout>
-      <DashboardNavbar />
+      <DashboardNavbar setSearchQuery={setSearchQuery} />
       <ArgonBox py={3} px={2} sx={{ backgroundColor: "#121212", minHeight: "100vh" }}>
         <ArgonTypography variant="h4" color="white" mb={4}>
           Welcome to WatchGuru
         </ArgonTypography>
         <Grid container spacing={2}>
-          {movies.map((movie, index) => (
+          {movies
+          .filter((movie) =>
+            movie.title.toLowerCase().includes(searchQuery.toLowerCase())
+          )
+          .map((movie, index) => (
             <Grid item xs={6} sm={4} md={3} lg={2.4} key={index}>
               <MovieCard
                 image={movie.poster_url}

@@ -60,12 +60,23 @@ import {
 import team2 from "assets/images/team-2.jpg";
 import logoSpotify from "assets/images/small-logos/logo-spotify.svg";
 
-function DashboardNavbar({ absolute, light, isMini }) {
+function DashboardNavbar({ absolute, light, isMini, setSearchQuery }) {
   const [navbarType, setNavbarType] = useState();
   const [controller, dispatch] = useArgonController();
   const { miniSidenav, transparentNavbar, fixedNavbar, openConfigurator } = controller;
   const [openMenu, setOpenMenu] = useState(false);
   const route = useLocation().pathname.split("/").slice(1);
+
+  const [searchText, setSearchText] = useState("");
+
+  const handleSearchChange = (event) => {
+    const value = event.target.value;
+    setSearchText(value);         // update local input field
+    if (setSearchQuery) {
+      setSearchQuery(value);      // lift state up to MoviesList
+    }
+  };
+
 
   useEffect(() => {
     // Setting the navbar type
@@ -136,7 +147,7 @@ function DashboardNavbar({ absolute, light, isMini }) {
       />
     </Menu>
   );
-
+  
   return (
     <AppBar
       position={absolute ? "absolute" : navbarType}
@@ -164,6 +175,8 @@ function DashboardNavbar({ absolute, light, isMini }) {
             <ArgonBox pr={1}>
               <ArgonInput
                 placeholder="Type here..."
+                value={searchText}
+                onChange={handleSearchChange}
                 startAdornment={
                   <Icon fontSize="small" style={{ marginRight: "6px" }}>
                     search
@@ -238,6 +251,7 @@ DashboardNavbar.propTypes = {
   absolute: PropTypes.bool,
   light: PropTypes.bool,
   isMini: PropTypes.bool,
+  setSearchQuery: PropTypes.func,
 };
 
 export default DashboardNavbar;
