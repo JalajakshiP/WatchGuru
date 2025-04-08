@@ -1,90 +1,92 @@
 import React, { useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
 import { apiUrl } from "config/config";
 import ArgonBox from "components/ArgonBox";
+import ArgonTypography from "components/ArgonTypography";
 import ArgonInput from "components/ArgonInput";
 import ArgonButton from "components/ArgonButton";
+import { useLocation } from "react-router-dom";
+import { TIME } from "sequelize";
 
-const Chats = ({ friendId, username }) => {
+function Chats() {
+    const location = useLocation();
+    const { friendId, friendName } = location.state || {};
   const [messages, setMessages] = useState([]);
-  const [messageInput, setMessageInput] = useState("");
-  const [unread, setUnread] = useState({});
+  const [newMessage, setNewMessage] = useState("");
+  const[currentuser, setCurrentUser] = useState(null);
 
   // Fetch chat history
-  const fetchMessages = async () => {
-    const res = await fetch(`${apiUrl}/messages/${friendId}`, {
-      credentials: "include",
-    });
-    const data = await res.json();
-    setMessages(data.messages);
-  };
-
-  // Poll unread notifications
-  const fetchUnread = async () => {
-    const res = await fetch(`${apiUrl}/messages/unread`, {
-      credentials: "include",
-    });
-    const data = await res.json();
-    const unreadMap = {};
-    data.unread.forEach(u => unreadMap[u.sender_id] = u.count);
-    setUnread(unreadMap);
-  };
-
-  const handleSend = async () => {
-    if (!messageInput.trim()) return;
-
-    await fetch(`${apiUrl}/messages/send`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({ receiverId: friendId, message: messageInput }),
-    });
-
-    setMessageInput("");
-    fetchMessages(); // update chat
-  };
-
   useEffect(() => {
+    const fetchMessages = async () => {
+      try {
+        // console.log("broooo",friendId);
+        const res = await fetch(`${apiUrl}/messages?friendId=${friendId}`, {
+          credentials: "include",
+        });
+        // console.log(friendId);
+        const data = await res.json();
+        // console.log("Messages:", data.user);
+        setCurrentUser(data.user);
+        setMessages(data.message);
+      } catch (err) {
+        console.error("Error fetching messages:", err);
+      }
+    };
+
     fetchMessages();
-    fetchUnread();
-    const interval = setInterval(fetchUnread, 5000); // poll every 5s
-    return () => clearInterval(interval);
   }, [friendId]);
+
+  // Handle send message
+  const handleSend = async () => {
+    if (!newMessage.trim()) return;
+
+    try {
+      const res = await fetch(`${apiUrl}/messages`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+        friend:  friendId,
+         msg: newMessage,
+        }),
+      });
+
+      if (res.ok) {
+        setMessages([...messages, { sender_id:currentuser,message: newMessage, timestamp: new TIME() }]);
+        setNewMessage("");
+      } else {
+        console.error("Failed to send message");
+      }
+    } catch (err) {
+      console.error("Error sending message:", err);
+    }
+  };
 
   return (
     <ArgonBox>
-      <h3>Chat with {username}</h3>
-      <div style={{ maxHeight: "300px", overflowY: "scroll" }}>
-        {messages.map((msg) => (
-          <div key={msg.message_id} style={{ textAlign: msg.sender_id === friendId ? "left" : "right" }}>
-            <p>{msg.message}</p>
-            <small>{new Date(msg.timestamp).toLocaleString()}</small>
-          </div>
+      <ArgonTypography variant="h4" mb={2}>Chat with Friend {friendName}</ArgonTypography>
+    
+      <ArgonBox mb={3} style={{ maxHeight: 300, overflowY: "auto" }}>
+        {messages.map((m, index) => (
+          <ArgonBox key={index} mb={1}>
+            <ArgonTypography variant="body2">
+              <strong>{m.sender_id === currentuser ? "You" : friendName}:</strong> {m.message}
+            </ArgonTypography>
+          </ArgonBox>
         ))}
-      </div>
-
-      <ArgonBox mt={2}>
-        <ArgonInput
-          value={messageInput}
-          onChange={(e) => setMessageInput(e.target.value)}
-          placeholder="Type your message..."
-        />
-        <ArgonButton onClick={handleSend} color="info" fullWidth>
-          Send
-        </ArgonButton>
       </ArgonBox>
 
-      {Object.entries(unread).length > 0 && (
-        <div style={{ marginTop: "1rem" }}>
-          <strong>Unread Messages:</strong>
-          <ul>
-            {Object.entries(unread).map(([senderId, count]) => (
-              <li key={senderId}>From User {senderId}: {count} unread</li>
-            ))}
-          </ul>
-        </div>
-      )}
+      <ArgonBox display="flex" gap={1}>
+        <ArgonInput
+          placeholder="Type your message..."
+          fullWidth
+          value={newMessage}
+          onChange={(e) => setNewMessage(e.target.value)}
+        />
+        <ArgonButton onClick={handleSend} color="info">Send</ArgonButton>
+      </ArgonBox>
     </ArgonBox>
   );
-};
+}
 
 export default Chats;

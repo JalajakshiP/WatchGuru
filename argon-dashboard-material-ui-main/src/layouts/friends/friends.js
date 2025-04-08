@@ -82,73 +82,93 @@ const Friends = () => {
       setIsSearching(false);
     }
   };
-
-  const handleSendRequest = async (friendId) => {
-    try {
-      const response = await fetch(`${apiUrl}/send-friend-request`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ friendId })
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to send friend request');
-      }
-      
-      setSnackbar({
-        open: true,
-        message: 'Friend request sent successfully',
-        severity: 'success'
-      });
-      
-      // Refresh data after sending request
-      await fetchFriendsData();
-      setSearchResults(prev => prev.filter(u => u.user_id !== friendId));
-    } catch (err) {
-      setSnackbar({
-        open: true,
-        message: err.message,
-        severity: 'error'
-      });
-      console.error('Error sending friend request:', err);
+// Updated handleSendRequest function
+const handleSendRequest = async (friendId) => {
+  try {
+    const response = await fetch(`${apiUrl}/send-friend-request`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ friendId })
+    });
+    
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to send request');
     }
-  };
 
-  const handleRespondRequest = async (friendId, accept) => {
-    try {
-      const response = await fetch(`${apiUrl}/respond-friend-request`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ friendId, accept })
-      });
-      
-      if (!response.ok) {
-        throw new Error(accept ? 'Failed to accept request' : 'Failed to decline request');
-      }
-      
-      setSnackbar({
-        open: true,
-        message: accept ? 'Friend request accepted' : 'Friend request declined',
-        severity: 'success'
-      });
-      
-      // Refresh data after responding to request
-      await fetchFriendsData();
-    } catch (err) {
-      setSnackbar({
-        open: true,
-        message: err.message,
-        severity: 'error'
-      });
-      console.error('Error responding to friend request:', err);
+    setSnackbar({
+      open: true,
+      message: data.message,
+      severity: 'success'
+    });
+
+    // Update UI immediately
+    setFriendsData(prev => ({
+      ...prev,
+      suggestions: prev.suggestions.filter(s => s.user_id !== friendId),
+      requests: prev.requests.filter(r => r.user_id !== friendId)
+    }));
+    
+    setSearchResults(prev => prev.filter(u => u.user_id !== friendId));
+  } catch (error) {
+    setSnackbar({
+      open: true,
+      message: error.message,
+      severity: 'error'
+    });
+  }
+};
+
+// Updated handleRespondRequest function
+const handleRespondRequest = async (friendId, accept) => {
+  try {
+    const response = await fetch(`${apiUrl}/respond-friend-request`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ friendId, accept })
+    });
+    
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to respond to request');
     }
-  };
+
+    setSnackbar({
+      open: true,
+      message: data.message,
+      severity: 'success'
+    });
+
+    // Update UI immediately
+    setFriendsData(prev => {
+      const updatedRequests = prev.requests.filter(r => r.user_id !== friendId);
+      const newFriend = accept 
+        ? prev.requests.find(r => r.user_id === friendId)
+        : null;
+      
+      return {
+        ...prev,
+        requests: updatedRequests,
+        friends: accept ? [...prev.friends, newFriend] : prev.friends
+      };
+    });
+  } catch (error) {
+    setSnackbar({
+      open: true,
+      message: error.message,
+      severity: 'error'
+    });
+  }
+};
+
 
   const handleCloseSnackbar = () => {
     setSnackbar(prev => ({ ...prev, open: false }));

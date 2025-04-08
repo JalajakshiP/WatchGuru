@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-
+import { apiUrl } from "config/config";
 const ProtectedRoute = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
@@ -8,7 +8,7 @@ const ProtectedRoute = ({ children }) => {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const res = await fetch("http://localhost:4000/isLoggedIn", {
+        const res = await fetch(`${apiUrl}/isLoggedIn`, {
           method: "GET",
           credentials: "include", // crucial for sending cookies
         });

@@ -14,7 +14,7 @@ const pool = new Pool({
   user: 'postgres',
   host: 'localhost',
   database: 'watchguru',
-  password: '12345678',
+  password: 'chocolate',
   port: 5432,
 });
 
@@ -60,7 +60,7 @@ app.get("/", (req, res) => {
 });
 
 app.post('/signup', async (req, res) => {
-  const {name, email, password, birthdate, genres } = req.body;
+  const { name, email, password, birthdate, genres } = req.body;
 
   // Basic validation
   if (!name || !email || !password || birthdate === undefined) {
@@ -189,7 +189,7 @@ app.get("/recommendations", isAuthenticated, async (req, res) => {
       [userGenres]
     );
     console.log(recommendationsResult.rows);
-    res.status(200).json({data: recommendationsResult.rows});
+    res.status(200).json({ data: recommendationsResult.rows });
   } catch (error) {
     console.error("Error fetching recommendations:", error);
     res.status(500).json({ message: "Internal server error" });
@@ -293,7 +293,7 @@ app.get("/recommendshows", isAuthenticated, async (req, res) => {
 app.get("/friends", isAuthenticated, async (req, res) => {
   try {
     const userId = req.session.userId;
-    
+
     // Current friends
     const friends = await pool.query(
       `SELECT u.user_id, u.username, u.profile_picture 
@@ -341,21 +341,106 @@ app.get("/friends", isAuthenticated, async (req, res) => {
   }
 });
 
-// Keep existing friend request endpoints
+// Send Friend Request
 app.post("/send-friend-request", isAuthenticated, async (req, res) => {
-  // ... existing implementation ...
+  try {
+    const { friendId } = req.body;
+    const userId = req.session.userId;
+
+    if (userId === friendId) {
+      return res.status(400).json({ message: "Cannot send request to yourself" });
+    }
+
+    // Check if user exists
+    const userExists = await pool.query(
+      "SELECT 1 FROM users WHERE user_id = $1",
+      [friendId]
+    );
+    if (userExists.rows.length === 0) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Check if request already exists
+    const existing = await pool.query(
+      `SELECT status FROM friends 
+       WHERE (user_id = $1 AND friend_id = $2)
+       OR (user_id = $2 AND friend_id = $1)`,
+      [userId, friendId]
+    );
+
+    if (existing.rows.length > 0) {
+      const status = existing.rows[0].status;
+      if (status === 'pending') {
+        return res.status(400).json({
+          message: userId === existing.rows[0].user_id
+            ? "Request already sent"
+            : "You have a pending request from this user"
+        });
+      }
+      if (status === 'accepted') {
+        return res.status(400).json({ message: "Already friends" });
+      }
+    }
+
+    await pool.query(
+      "INSERT INTO friends (user_id, friend_id, status) VALUES ($1, $2, 'pending')",
+      [userId, friendId]
+    );
+
+
+
+    res.status(200).json({ message: "Friend request sent" });
+  } catch (error) {
+    console.error("Error sending friend request:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
 });
 
+// Respond to Friend Request
 app.post("/respond-friend-request", isAuthenticated, async (req, res) => {
-  // ... existing implementation ...
-});
+  try {
+    const { friendId, accept } = req.body;
+    const userId = req.session.userId;
 
+    // Check if request exists
+    const request = await pool.query(
+      `SELECT * FROM friends 
+       WHERE user_id = $1 AND friend_id = $2 AND status = 'pending'`,
+      [friendId, userId]
+    );
+
+    if (request.rows.length === 0) {
+      return res.status(404).json({ message: "Friend request not found" });
+    }
+
+    if (accept) {
+      await pool.query(
+        `UPDATE friends SET status = 'accepted' 
+         WHERE user_id = $1 AND friend_id = $2`,
+        [friendId, userId]
+      );
+    } else {
+      await pool.query(
+        `DELETE FROM friends 
+         WHERE user_id = $1 AND friend_id = $2`,
+        [friendId, userId]
+      );
+    }
+
+    res.status(200).json({
+      message: accept ? "Friend request accepted" : "Friend request declined"
+    });
+  } catch (error) {
+    console.error("Error responding to friend request:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
 // Search users endpoint
 app.get("/search-users", isAuthenticated, async (req, res) => {
   try {
     const { q } = req.query;
     const userId = req.session.userId;
-    
+
     const results = await pool.query(
       `SELECT user_id, username, profile_picture 
        FROM users 
@@ -371,3 +456,97 @@ app.get("/search-users", isAuthenticated, async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 });
+// Get content details by ID
+app.get("/content/:contentId", isAuthenticated, async (req, res) => {
+  try {
+    const { contentId } = req.params;
+
+    const contentResult = await pool.query(
+      `SELECT * FROM content WHERE content_id = $1`,
+      [contentId]
+    );
+
+    if (contentResult.rows.length === 0) {
+      return res.status(404).json({ message: "Content not found" });
+    }
+
+    const content = contentResult.rows[0];
+
+    // Get similar content based on genres
+    const similarContent = await pool.query(
+      `SELECT content_id, title, poster_url 
+       FROM content 
+       WHERE content_id != $1 
+       AND genre && $2
+       LIMIT 6`,
+      [contentId, content.genre]
+    );
+
+    res.status(200).json({
+      content,
+      similar: similarContent.rows
+    });
+  } catch (error) {
+    console.error("Error fetching content:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+//chats corresponding
+// Get all messages between logged-in user and a friend
+app.get("/messages", async (req, res) => {
+  const userId = req.session.userId;
+  const { friendId } = req.query; // <- Changed from req.params to req.query
+
+  if (!userId) {
+    return res.status(401).json({ message: "Not authenticated" });
+  }
+
+  try {
+    const messages = await pool.query(
+      `SELECT sender_id, receiver_id, message, timestamp
+       FROM messages 
+       WHERE (sender_id = $1 AND receiver_id = $2)
+          OR (sender_id = $2 AND receiver_id = $1) and not is_read 
+       ORDER BY timestamp ASC`,
+      [userId, friendId]
+    );
+
+    res.status(200).json({message:messages.rows,user : userId});
+  } catch (err) {
+    console.error("Error fetching messages:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+
+
+app.post("/messages", async (req, res) => {
+  const senderId = req.session.userId;
+  const friendId = req.body.friend;
+  const msg = req.body.msg;
+  console.log("friendId", friendId);
+  console.log("msg", msg);
+
+  if (!senderId || !friendId || !msg) {
+    return res.status(400).json({ message: "Missing required fields" });
+  }
+
+  try {
+    await pool.query(
+      `INSERT INTO messages (sender_id, receiver_id, message)
+       VALUES ($1, $2, $3)`,
+      [senderId, friendId, msg]
+    );
+
+    res.status(201).json({ message: "Message sent" });
+  } catch (err) {
+    console.error("Error sending message:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+
+
+
+//chats end

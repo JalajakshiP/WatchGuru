@@ -6,7 +6,8 @@ import SignUp from "layouts/authentication/sign-up";
 import HomePage from "layouts/home";
 import SelectGenres from "layouts/authentication/select-genres";
 import Friends from "layouts/friends/friends";
-import ChatsWrapper from "layouts/chats/ChatsWrapper";
+import Chats from "layouts/chats/Chats";
+import ChatsHome from "layouts/chats/ChatsHome";
 import Shows from "layouts/shows/shows";
 import Movies from "layouts/movies/movies";
 import Anime from "layouts/anime/anime";
@@ -76,9 +77,9 @@ const routes = [
     key: "select-genres",
     route: "/authentication/select-genres",
     component: (
-      <ProtectedRoute>
+      
         <SelectGenres />
-      </ProtectedRoute>
+      
     ),
     layout: "main",
   },
@@ -98,14 +99,26 @@ const routes = [
     type: "route",
     name: "Chats",
     key: "chats",
-    route: "/chats/:friendId",
+    route: "/chats",
     component: (
       <ProtectedRoute>
-        <ChatsWrapper />
+        <ChatsHome />
       </ProtectedRoute>
     ),
     layout: "main",
   },
+  {
+    type: "route",
+    name: "Chat With Friend",
+    key: "chat-friend",
+    route: "/Chatting",
+    component: (
+      <ProtectedRoute>
+        <Chats/>
+      </ProtectedRoute>
+    ),
+    layout: "main",
+  },  
   {
     type: "route",
     name: "Shows",
