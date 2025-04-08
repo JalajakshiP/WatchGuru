@@ -557,7 +557,8 @@ app.get("/content/:contentId", isAuthenticated, async (req, res) => {
     });
   } catch (error) {
     console.error("Error fetching content:", error);
-
+  }
+});
 // Fetch user profile information
 app.get("/profileInfo", isAuthenticated, async (req, res) => {
   try {
