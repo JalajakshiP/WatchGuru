@@ -12,6 +12,9 @@ import Shows from "layouts/shows/shows";
 import Movies from "layouts/movies/movies";
 import Anime from "layouts/anime/anime";
 import Logout from "layouts/authentication/logout/logout";
+import UpdateProfile from "layouts/profile/components/Update";
+
+// Argon Dashboard 2 MUI components
 import ArgonBox from "components/ArgonBox";
 import ProtectedRoute from "layouts/authentication/components/ProtectedRoute/ProtectedRoutes"; // 👈 added here
 
@@ -88,12 +91,12 @@ const routes = [
     name: "Friends",
     key: "friends",
     route: "/friends",
+    icon: <ArgonBox component="i" color="success" fontSize="14px" className="ni ni-single-02" />,
     component: (
-      <ProtectedRoute>
-        <Friends />
-      </ProtectedRoute>
-    ),
-    layout: "main",
+    <ProtectedRoute>
+      <Friends />
+    </ProtectedRoute>),
+    layout: "dashboard",
   },
   {
     type: "route",
@@ -105,6 +108,7 @@ const routes = [
         <ChatsHome />
       </ProtectedRoute>
     ),
+    icon: <ArgonBox component="i" color="info" fontSize="14px" className="ni ni-chat-round" />,
     layout: "main",
   },
   {
@@ -129,6 +133,7 @@ const routes = [
         <Shows />
       </ProtectedRoute>
     ),
+    icon: <ArgonBox component="i" color="info" fontSize="14px" className="ni ni-tv-2" />,
     layout: "dashboard",
   },
   {
@@ -141,6 +146,7 @@ const routes = [
         <Movies />
       </ProtectedRoute>
     ),
+    icon: <ArgonBox component="i" color="info" fontSize="14px" className="ni ni-camera-compact" />,
     layout: "dashboard",
   },
   {
@@ -153,6 +159,15 @@ const routes = [
         <Anime />
       </ProtectedRoute>
     ),
+    icon: <ArgonBox component="i" color="info" fontSize="14px" className="ni ni-planet" />,
+    layout: "dashboard",
+  },
+  {
+    type: "route",
+    name: "Update Profile",
+    key: "update-profile",
+    route: "/update-profile",
+    component: <UpdateProfile />,
     layout: "dashboard",
   },
   {
@@ -165,6 +180,7 @@ const routes = [
         <Logout />
       </ProtectedRoute>
     ),
+    icon: <ArgonBox component="i" color="info" fontSize="14px" className="ni ni-button-power" />,
     layout: "main",
   },
 ];

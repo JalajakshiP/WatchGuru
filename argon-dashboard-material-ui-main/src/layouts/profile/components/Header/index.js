@@ -36,6 +36,7 @@ import breakpoints from "assets/theme/base/breakpoints";
 
 // Images
 import burceMars from "assets/images/bruce-mars.jpg";
+import { useNavigate } from 'react-router-dom';
 
 function Header() {
   const [tabsOrientation, setTabsOrientation] = useState("horizontal");
@@ -61,7 +62,13 @@ function Header() {
     return () => window.removeEventListener("resize", handleTabsOrientation);
   }, [tabsOrientation]);
 
-  const handleSetTabValue = (event, newValue) => setTabValue(newValue);
+  const handleSetTabValue = (event, newValue) => {
+    setTabValue(newValue);
+    if (newValue === 0) navigate("/friends");
+    if (newValue === 1) navigate("/chats");
+  }
+  const username = localStorage.getItem("user");
+  const navigate = useNavigate();
 
   return (
     <ArgonBox position="relative">
@@ -87,10 +94,7 @@ function Header() {
           <Grid item>
             <ArgonBox height="100%" mt={0.5} lineHeight={1}>
               <ArgonTypography variant="h5" fontWeight="medium">
-                Alex Thompson
-              </ArgonTypography>
-              <ArgonTypography variant="button" color="text" fontWeight="medium">
-                CEO / Co-Founder
+                {username}
               </ArgonTypography>
             </ArgonBox>
           </Grid>
@@ -98,25 +102,25 @@ function Header() {
             <AppBar position="static">
               <Tabs orientation={tabsOrientation} value={tabValue} onChange={handleSetTabValue}>
                 <Tab
-                  label="App"
+                  label="Friends"
                   icon={
-                    <i className="ni ni-app" style={{ marginTop: "6px", marginRight: "8px" }} />
+                    <i className="ni ni-single-02" style={{ marginTop: "6px", marginRight: "8px" }} />
                   }
                 />
                 <Tab
-                  label="Message"
+                  label="Chats"
                   icon={
                     <i
-                      className="ni ni-email-83"
+                      className="ni ni-chat-round"
                       style={{ marginTop: "6px", marginRight: "8px" }}
                     />
                   }
                 />
                 <Tab
-                  label="Settings"
+                  label="Reviews"
                   icon={
                     <i
-                      className="ni ni-settings-gear-65"
+                      className="ni ni-satisfied"
                       style={{ marginTop: "6px", marginRight: "8px" }}
                     />
                   }

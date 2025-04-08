@@ -14,7 +14,7 @@ const pool = new Pool({
   user: 'postgres',
   host: 'localhost',
   database: 'watchguru',
-  password: 'chocolate',
+  password: 'Mahakkidata',
   port: 5432,
 });
 
@@ -91,7 +91,7 @@ app.post('/signup', async (req, res) => {
 
     req.session.userId = newUser.rows[0].user_id;
 
-    res.status(200).json({ message: "User registered successfully" });
+    res.status(200).json({name: newUser.rows[0].username, message: "User registered successfully" });
   } catch (error) {
     console.error("Signup Error:", error);
     res.status(500).json({ message: "Internal server error" });
@@ -128,7 +128,7 @@ app.post("/login", async (req, res) => {
     // Store user ID in session to keep the user logged in
     req.session.userId = user.user_id;
 
-    res.status(200).json({ message: "Login successful" });
+    res.status(200).json({ name: user.username, message: "Login successful" });
   } catch (error) {
     console.error("Error logging in:", error);
     res.status(500).json({ message: "Error logging in" });
@@ -188,8 +188,8 @@ app.get("/recommendations", isAuthenticated, async (req, res) => {
       `SELECT content_id, title, poster_url, genre FROM content WHERE genre && $1::text[]`,
       [userGenres]
     );
-    console.log(recommendationsResult.rows);
-    res.status(200).json({ data: recommendationsResult.rows });
+
+    res.status(200).json({data: recommendationsResult.rows});
   } catch (error) {
     console.error("Error fetching recommendations:", error);
     res.status(500).json({ message: "Internal server error" });
@@ -557,6 +557,29 @@ app.get("/content/:contentId", isAuthenticated, async (req, res) => {
     });
   } catch (error) {
     console.error("Error fetching content:", error);
+
+// Fetch user profile information
+app.get("/profileInfo", isAuthenticated, async (req, res) => {
+  try {
+    const userId = req.session.userId;
+    console.log(userId);
+    const profileResult = await pool.query(
+      `SELECT favorite_genres, bio 
+       FROM users 
+       WHERE user_id = $1`,
+      [userId]
+    );
+
+    if (profileResult.rows.length === 0) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    console.log(profileResult.rows[0].bio);
+    console.log(profileResult.rows[0].favorite_genres);
+    res.status(200).json({bio: profileResult.rows[0].bio, genres: profileResult.rows[0].favorite_genres});
+
+  } catch (error) {
+    console.error("Error fetching profile information:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 });
@@ -619,3 +642,28 @@ app.post("/messages", async (req, res) => {
 
 
 //chats end
+// Update user profile information
+app.post("/updateProfile", isAuthenticated, async (req, res) => {
+  try {
+    const userId = req.session.userId;
+    const { bio, genres } = req.body;
+
+    // Basic validation
+    if (!bio || !genres || !Array.isArray(genres) || genres.length < 3) {
+      return res.status(400).json({ message: "Please provide a valid bio and at least 3 favorite genres." });
+    }
+
+    await pool.query(
+      `UPDATE users 
+       SET bio = $1, favorite_genres = $2 
+       WHERE user_id = $3`,
+      [bio, genres, userId]
+    );
+
+    res.status(200).json({ message: "Profile updated successfully" });
+
+  } catch (error) {
+    console.error("Error updating profile:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});

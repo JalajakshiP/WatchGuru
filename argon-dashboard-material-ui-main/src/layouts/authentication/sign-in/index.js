@@ -84,6 +84,9 @@ function Illustration() {
 
       if(!response.ok) throw new Error("Login failed");
 
+      const data = await response.json();
+      localStorage.setItem("user", data.name);
+      
       navigate("/dashboard");
     } catch (err) {
       setError(err.message);

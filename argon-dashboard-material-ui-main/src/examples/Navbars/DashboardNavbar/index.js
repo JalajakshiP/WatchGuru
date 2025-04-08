@@ -124,7 +124,7 @@ function DashboardNavbar({ absolute, light, isMini, setSearchQuery }) {
     >
       <NotificationItem
         image={<img src={team2} alt="person" />}
-        title={["New message", "from Laur"]}
+        title={["Movie Recommedation", "from Clairo"]}
         date="13 minutes ago"
         onClick={handleCloseMenu}
       />
@@ -147,7 +147,11 @@ function DashboardNavbar({ absolute, light, isMini, setSearchQuery }) {
       />
     </Menu>
   );
+<<<<<<< Updated upstream
   
+=======
+  const username = localStorage.getItem("user");
+>>>>>>> Stashed changes
   return (
     <AppBar
       position={absolute ? "absolute" : navbarType}
@@ -185,7 +189,7 @@ function DashboardNavbar({ absolute, light, isMini, setSearchQuery }) {
               />
             </ArgonBox>
             <ArgonBox color={light ? "white" : "inherit"}>
-              <Link to="/authentication/sign-in/basic">
+              <Link to="/profile" style={{ textDecoration: "none" }}>
                 <IconButton sx={navbarIconButton} size="small">
                   <Icon
                     sx={({ palette: { dark, white } }) => ({
@@ -199,7 +203,7 @@ function DashboardNavbar({ absolute, light, isMini, setSearchQuery }) {
                     fontWeight="medium"
                     color={light && transparentNavbar ? "white" : "dark"}
                   >
-                    Sign in
+                    {username}
                   </ArgonTypography>
                 </IconButton>
               </Link>

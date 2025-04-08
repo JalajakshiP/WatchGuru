@@ -77,7 +77,10 @@ function SelectGenres() {
       });
   
       if (!response.ok) throw new Error("Signup failed");
-  
+      
+      const data = await response.json();
+      localStorage.setItem("user", data.name);
+      
       navigate("/dashboard"); // or /recommendations if that’s your next step
     } catch (err) {
       setError(err.message);

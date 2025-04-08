@@ -34,29 +34,40 @@ import ArgonTypography from "components/ArgonTypography";
 import colors from "assets/theme/base/colors";
 import typography from "assets/theme/base/typography";
 
-function ProfileInfoCard({ title, description, info, social, action }) {
+function ProfileInfoCard({ title, description, favoriteGenres, action }) {
   const labels = [];
   const values = [];
   const { socialMediaColors } = colors;
   const { size } = typography;
 
   // Convert this form `objectKey` of the object key in to this `object key`
-  Object.keys(info).forEach((el) => {
+  /*Object.keys(info).forEach((el) => {
     if (el.match(/[A-Z\s]+/)) {
       const uppercaseLetter = Array.from(el).find((i) => i.match(/[A-Z]+/));
-      const newElement = el.replace(uppercaseLetter, ` ${uppercaseLetter.toLowerCase()}`);
-
-      labels.push(newElement);
+      if (uppercaseLetter) {
+        const newElement = el.replace(uppercaseLetter, ` ${uppercaseLetter.toLowerCase()}`);
+        labels.push(newElement);
+      } else {
+        labels.push(el); // fallback if no uppercase letter is found
+      }
     } else {
       labels.push(el);
     }
-  });
+  });*/
+  
 
   // Push the object values into the values array
-  Object.values(info).forEach((el) => values.push(el));
+  /*Object.values(info).forEach((el) => {
+    if (Array.isArray(el)) {
+      values.push(el.join(", "));
+    } else {
+      values.push(el);
+    }
+  });*/
+  
 
   // Render the card info items
-  const renderItems = labels.map((label, key) => (
+  /*const renderItems = labels.map((label, key) => (
     <ArgonBox key={label} display="flex" py={1} pr={2}>
       <ArgonTypography variant="button" fontWeight="bold" textTransform="capitalize">
         {label}: &nbsp;
@@ -65,10 +76,10 @@ function ProfileInfoCard({ title, description, info, social, action }) {
         &nbsp;{values[key]}
       </ArgonTypography>
     </ArgonBox>
-  ));
+  ));*/
 
   // Render the card social media icons
-  const renderSocial = social.map(({ link, icon, color }) => (
+  /*const renderSocial = social.map(({ link, icon, color }) => (
     <ArgonBox
       key={color}
       component="a"
@@ -83,7 +94,30 @@ function ProfileInfoCard({ title, description, info, social, action }) {
     >
       {icon}
     </ArgonBox>
-  ));
+  ));*/
+  
+  // Render favorite genres (if available and it's an array)
+  const renderGenres = Array.isArray(favoriteGenres)
+  ? favoriteGenres.map((genre, index) => (
+    <ArgonBox
+    key={index}
+    px={2}
+    py={0.5}
+    borderRadius="xl"
+    sx={{
+      backgroundColor: "#FFF3CD", // soft yellow
+      color: "#856404",            // dark golden text
+      border: "1px solid #FFEEBA",
+      fontWeight: "medium",
+      fontSize: "0.875rem",
+    }}
+  >
+    {genre}
+  </ArgonBox>
+    ))
+  : null;
+
+
 
   return (
     <Card sx={{ height: "100%" }}>
@@ -106,15 +140,21 @@ function ProfileInfoCard({ title, description, info, social, action }) {
         <ArgonBox opacity={0.3}>
           <Divider />
         </ArgonBox>
-        <ArgonBox>
-          {renderItems}
-          <ArgonBox display="flex" py={1} pr={2}>
-            <ArgonTypography variant="button" fontWeight="bold" textTransform="capitalize">
-              social: &nbsp;
-            </ArgonTypography>
-            {renderSocial}
+        <ArgonBox py={1} pr={2}>
+          <ArgonTypography
+            variant="button"
+            fontWeight="bold"
+            textTransform="capitalize"
+            display="block"
+            mb={1}
+          >
+            Favorite Genres:
+          </ArgonTypography>
+
+          <ArgonBox display="flex" flexWrap="wrap" gap={1}>
+            {renderGenres}
           </ArgonBox>
-        </ArgonBox>
+          </ArgonBox>
       </ArgonBox>
     </Card>
   );
@@ -124,8 +164,9 @@ function ProfileInfoCard({ title, description, info, social, action }) {
 ProfileInfoCard.propTypes = {
   title: PropTypes.string.isRequired,
   description: PropTypes.string.isRequired,
-  info: PropTypes.objectOf(PropTypes.string).isRequired,
-  social: PropTypes.arrayOf(PropTypes.object).isRequired,
+  favouriteGenres: PropTypes.arrayOf(PropTypes.string).isRequired,
+  //info: PropTypes.objectOf(PropTypes.string).isRequired,
+  //social: PropTypes.arrayOf(PropTypes.object).isRequired,
   action: PropTypes.shape({
     route: PropTypes.string.isRequired,
     tooltip: PropTypes.string.isRequired,
