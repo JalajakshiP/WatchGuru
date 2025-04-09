@@ -60,6 +60,7 @@ function DashboardLayout({ bgColor, children, ...rest }) {
         position="absolute"
         top={0}
         left={0}
+        zIndex={-1}
         sx={darkMode && { bgColor: ({ palette: { background } }) => background.default }}
         {...rest}
       />

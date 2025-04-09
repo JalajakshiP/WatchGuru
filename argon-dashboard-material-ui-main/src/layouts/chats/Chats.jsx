@@ -7,6 +7,8 @@ import ArgonInput from "components/ArgonInput";
 import ArgonButton from "components/ArgonButton";
 import { useLocation } from "react-router-dom";
 import { TIME } from "sequelize";
+import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
+import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 
 function Chats() {
     const location = useLocation();
@@ -63,6 +65,8 @@ function Chats() {
   };
 
   return (
+    <DashboardLayout>
+      <DashboardNavbar/>
     <ArgonBox>
       <ArgonTypography variant="h4" mb={2}>Chat with Friend {friendName}</ArgonTypography>
     
@@ -86,6 +90,7 @@ function Chats() {
         <ArgonButton onClick={handleSend} color="info">Send</ArgonButton>
       </ArgonBox>
     </ArgonBox>
+    </DashboardLayout>
   );
 }
 

@@ -10,6 +10,7 @@ import CheckIcon from '@mui/icons-material/Check';
 import ClearIcon from '@mui/icons-material/Clear';
 import { apiUrl } from "config/config";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
+import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 
 const Friends = () => {
   const [activeTab, setActiveTab] = useState('friends');
@@ -176,6 +177,7 @@ const handleRespondRequest = async (friendId, accept) => {
 
   return (
     <DashboardLayout>
+      <DashboardNavbar />
       <Card sx={{ p: 3 }}>
         {/* Search Bar */}
         <Box mb={3}>

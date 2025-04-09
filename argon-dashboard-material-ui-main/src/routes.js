@@ -93,9 +93,10 @@ const routes = [
     route: "/friends",
     icon: <ArgonBox component="i" color="success" fontSize="14px" className="ni ni-single-02" />,
     component: (
-    <ProtectedRoute>
-      <Friends />
-    </ProtectedRoute>),
+      <ProtectedRoute>
+        <Friends />
+      </ProtectedRoute>
+    ),
     layout: "dashboard",
   },
   {
@@ -109,7 +110,7 @@ const routes = [
       </ProtectedRoute>
     ),
     icon: <ArgonBox component="i" color="info" fontSize="14px" className="ni ni-chat-round" />,
-    layout: "main",
+    layout: "dashboard",
   },
   {
     type: "route",
@@ -121,7 +122,7 @@ const routes = [
         <Chats/>
       </ProtectedRoute>
     ),
-    layout: "main",
+    layout: "dashboard",
   },  
   {
     type: "route",

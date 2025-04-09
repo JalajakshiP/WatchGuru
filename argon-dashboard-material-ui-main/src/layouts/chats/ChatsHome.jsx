@@ -4,6 +4,8 @@ import { apiUrl } from "config/config";
 import ArgonBox from "components/ArgonBox";
 import ArgonButton from "components/ArgonButton";
 import ArgonTypography from "components/ArgonTypography";
+import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
+import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 
 function ChatsHome() {
   const [friends, setFriends] = useState([]);
@@ -26,6 +28,8 @@ function ChatsHome() {
   }, []);
 
   return (
+    <DashboardLayout>
+          <DashboardNavbar/>
     <ArgonBox>
       <ArgonTypography variant="h4" mb={2}>Your Friends</ArgonTypography>
       {friends.map((friend) => (
@@ -43,6 +47,7 @@ function ChatsHome() {
         </ArgonBox>
       ))}
     </ArgonBox>
+    </DashboardLayout>
   );
 }
 
