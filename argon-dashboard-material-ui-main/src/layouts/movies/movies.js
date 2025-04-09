@@ -38,8 +38,8 @@ function MoviesList() {
   return (
     <DashboardLayout>
       <DashboardNavbar setSearchQuery={setSearchQuery} />
-      <ArgonBox py={3} px={2} sx={{ backgroundColor: "#121212", minHeight: "100vh" }}>
-        <ArgonTypography variant="h4" color="white" mb={3}>
+      <ArgonBox py={3} px={2} sx={{ backgroundColor: "#ffffff", minHeight: "100vh" }}>
+        <ArgonTypography variant="h4" color="black" mb={3}>
           Movies for You
         </ArgonTypography>
         <Grid container spacing={2} mb={5}>
@@ -58,7 +58,7 @@ function MoviesList() {
           ))}
         </Grid>
 
-        <ArgonTypography variant="h4" color="white" mb={3}>
+        <ArgonTypography variant="h4" color="black" mb={3}>
           Explore More Movies
         </ArgonTypography>
         <Grid container spacing={2}>

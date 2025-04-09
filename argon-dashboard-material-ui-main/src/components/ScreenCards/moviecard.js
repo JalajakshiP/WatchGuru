@@ -35,7 +35,7 @@ function MovieCard({ image, title, genres }) {
               label={genre}
               size="small"
               sx={{
-                backgroundColor: "#00bcd4",
+                backgroundColor: "#E2F5F6",
                 color: "#000",
                 fontSize: "0.7rem",
                 height: "20px",

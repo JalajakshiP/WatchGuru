@@ -50,7 +50,7 @@ function AnimeList() {
           .map((movie, index) => (
             <Grid item xs={6} sm={4} md={3} lg={2.4} key={index}>
               <MovieCard 
-              py={3} px={2} sx={{ backgroundColor: "#ffffff", minHeight: "100vh" }}
+              
                 image={movie.poster_url}
                 title={movie.title}
                 genres={movie.genre}
@@ -59,7 +59,7 @@ function AnimeList() {
           ))}
         </Grid>
 
-        <ArgonTypography variant="h4" color="white" mb={3}>
+        <ArgonTypography variant="h4" color="black" mb={3}>
           Explore More Animes
         </ArgonTypography>
         <Grid container spacing={2}>
