@@ -14,7 +14,7 @@ const pool = new Pool({
   user: 'postgres',
   host: 'localhost',
   database: 'watchguru',
-  password: 'chocolate',
+  password: '12345678',
   port: 5432,
 });
 
@@ -44,7 +44,7 @@ app.use(
 // Authentication APIs
 // Signup, Login, IsLoggedIn and Logout
 
-e
+
 function isAuthenticated(req, res, next) {
   req.session.userId ? next() : res.status(400).json({ message: "Unauthorized" });
 
@@ -131,10 +131,8 @@ app.post("/login", async (req, res) => {
 
 
 app.get("/isLoggedIn", async (req, res) => {
-  // console.log(req.session.userId);
   if (req.session.userId) {
     person = await pool.query("SELECT username FROM Users WHERE user_id = $1", [req.session.userId]);
-    // console.log(person.rows[0].username);
     username = person.rows[0].username;
     res.status(200).json({ message: "Logged in", username }); // Send username if logged in
   } else {
@@ -230,7 +228,6 @@ app.get("/recommendmovies", isAuthenticated, async (req, res) => {
       );
     }
     const otherMovies = othersResult.rows;
-    // console.log(recommendationsResult.rows);
     res.status(200).json({ 
       recommended: recommendedMovies,
       others: otherMovies,
@@ -284,7 +281,6 @@ app.get("/recommendanimes", isAuthenticated, async (req, res) => {
       );
     }
     const otherAnimes = othersResult.rows;
-    // console.log(recommendationsResult.rows);
     res.status(200).json({ 
       recommended: recommendedAnimes,
       others: otherAnimes,
@@ -338,7 +334,6 @@ app.get("/recommendshows", isAuthenticated, async (req, res) => {
       );
     }
     const otherMovies = othersResult.rows;
-    // console.log(recommendationsResult.rows);
     res.status(200).json({ 
       recommended: recommendedShows,
       others: otherMovies,
@@ -554,7 +549,6 @@ app.get("/content/:contentId", isAuthenticated, async (req, res) => {
 app.get("/profileInfo", isAuthenticated, async (req, res) => {
   try {
     const userId = req.session.userId;
-    console.log(userId);
     const profileResult = await pool.query(
       `SELECT favorite_genres, bio 
        FROM users 
@@ -566,8 +560,6 @@ app.get("/profileInfo", isAuthenticated, async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    console.log(profileResult.rows[0].bio);
-    console.log(profileResult.rows[0].favorite_genres);
     res.status(200).json({bio: profileResult.rows[0].bio, genres: profileResult.rows[0].favorite_genres});
 
   } catch (error) {
@@ -609,8 +601,6 @@ app.post("/messages", async (req, res) => {
   const senderId = req.session.userId;
   const friendId = req.body.friend;
   const msg = req.body.msg;
-  console.log("friendId", friendId);
-  console.log("msg", msg);
 
   if (!senderId || !friendId || !msg) {
     return res.status(400).json({ message: "Missing required fields" });

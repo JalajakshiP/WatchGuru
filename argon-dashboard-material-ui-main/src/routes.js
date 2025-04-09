@@ -13,7 +13,7 @@ import Movies from "layouts/movies/movies";
 import Anime from "layouts/anime/anime";
 import Logout from "layouts/authentication/logout/logout";
 import UpdateProfile from "layouts/profile/components/Update";
-
+import MovieDetails from  "layouts/moviedetails";
 // Argon Dashboard 2 MUI components
 import ArgonBox from "components/ArgonBox";
 import ProtectedRoute from "layouts/authentication/components/ProtectedRoute/ProtectedRoutes"; // 👈 added here
@@ -171,6 +171,19 @@ const routes = [
     component: <UpdateProfile />,
     layout: "dashboard",
   },
+  // Add this to your routes array in routes.js
+{
+  type: "route",
+  name: "Movie Details",
+  key: "movie-details",
+  route: "/movie/:id",
+  component: (
+    <ProtectedRoute>
+      <MovieDetails />
+    </ProtectedRoute>
+  ),
+  layout: "dashboard",
+},
   {
     type: "route",
     name: "Logout",

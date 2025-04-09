@@ -53,7 +53,7 @@ function Overview() {
         const result = await response.json();
         setBio(result.bio); // access .data from your response
         setGenres(result.genres); // access .data from your response
-        console.log(result.genres);
+        // console.log(result.genres);
       } catch (error) {
         console.error("Error fetching content:", error);
       }

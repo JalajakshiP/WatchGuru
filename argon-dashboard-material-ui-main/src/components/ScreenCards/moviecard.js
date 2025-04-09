@@ -1,17 +1,26 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardMedia, CardContent, Typography, Chip, Box } from "@mui/material";
 
-function MovieCard({ image, title, genres }) {
+function MovieCard({ image, title, genres, contentId }) {
+  const navigate = useNavigate();
+
+  const handleClick = () => {
+    navigate(`/movie/${contentId}`);
+  };
+
   return (
     <Card
+      onClick={handleClick}
       sx={{
         width: 180,
         height: 320,
         borderRadius: 2,
         backgroundColor: "#1c1c1c",
-        color: "#f5f5f5",
+        color: "white",
         overflow: "hidden",
         transition: "transform 0.3s",
+        cursor: "pointer",
         "&:hover": {
           transform: "scale(1.05)",
         },
@@ -25,7 +34,7 @@ function MovieCard({ image, title, genres }) {
         sx={{ objectFit: "cover" }}
       />
       <CardContent sx={{ p: 1 }}>
-        <Typography variant="body2" fontWeight="bold" noWrap sx={{ color: "#ffffff" }}>
+        <Typography variant="body2" fontWeight="bold" noWrap>
           {title}
         </Typography>
         <Box mt={1} display="flex" gap={0.5} flexWrap="wrap">
@@ -35,8 +44,8 @@ function MovieCard({ image, title, genres }) {
               label={genre}
               size="small"
               sx={{
-                backgroundColor: "#00bcd4",
-                color: "#000",
+                backgroundColor: "#333",
+                color: "white",
                 fontSize: "0.7rem",
                 height: "20px",
               }}

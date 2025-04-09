@@ -53,6 +53,8 @@ function ShowList() {
                 image={movie.poster_url}
                 title={movie.title}
                 genres={movie.genre}
+                contentId={movie.content_id}
+
               />
             </Grid>
           ))}
@@ -72,6 +74,8 @@ function ShowList() {
                 image={movie.poster_url}
                 title={movie.title}
                 genres={movie.genre}
+                contentId={movie.content_id}
+
               />
             </Grid>
           ))}
