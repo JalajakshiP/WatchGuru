@@ -147,11 +147,7 @@ function DashboardNavbar({ absolute, light, isMini, setSearchQuery }) {
       />
     </Menu>
   );
-<<<<<<< Updated upstream
-  
-=======
   const username = localStorage.getItem("user");
->>>>>>> Stashed changes
   return (
     <AppBar
       position={absolute ? "absolute" : navbarType}
