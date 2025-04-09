@@ -38,8 +38,8 @@ function ShowList() {
   return (
     <DashboardLayout>
       <DashboardNavbar setSearchQuery={setSearchQuery}/>
-      <ArgonBox py={3} px={2} sx={{ backgroundColor: "#121212", minHeight: "100vh" }}>
-        <ArgonTypography variant="h4" color="white" mb={4}>
+      <ArgonBox py={3} px={2} sx={{ backgroundColor: "#ffffff", minHeight: "100vh" }}>
+        <ArgonTypography variant="h4" color="black" mb={4}>
            Shows For You
         </ArgonTypography>
         <Grid container spacing={2}>
@@ -60,7 +60,7 @@ function ShowList() {
           ))}
         </Grid>
 
-        <ArgonTypography variant="h4" color="white" mb={3}>
+        <ArgonTypography variant="h4" color="black" mb={3}>
           Explore More Shows
         </ArgonTypography>
         <Grid container spacing={2}>
