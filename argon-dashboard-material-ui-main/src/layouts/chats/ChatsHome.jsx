@@ -29,24 +29,52 @@ function ChatsHome() {
 
   return (
     <DashboardLayout>
-          <DashboardNavbar/>
-    <ArgonBox>
-      <ArgonTypography variant="h4" mb={2}>Your Friends</ArgonTypography>
-      {friends.map((friend) => (
-        <ArgonBox key={friend.user_id} mb={2}>
-          <ArgonTypography>{friend.username}</ArgonTypography>
-          <ArgonButton
-            size="small"
-            onClick={() =>
-                navigate("/Chatting", { state: { friendId: friend.user_id, friendName: friend.username } })
-              }
-              
-          >
-            Chat
-          </ArgonButton>
-        </ArgonBox>
-      ))}
-    </ArgonBox>
+      <DashboardNavbar />
+      <ArgonBox p={3}>
+        <ArgonTypography variant="h4" mb={3}>
+          Your Friends
+        </ArgonTypography>
+
+        {friends.length === 0 ? (
+          <ArgonTypography variant="body2" color="text">
+            You don't have any friends yet.
+          </ArgonTypography>
+        ) : (
+          friends.map((friend) => (
+            <ArgonBox
+              key={friend.user_id}
+              display="flex"
+              justifyContent="space-between"
+              alignItems="center"
+              p={2}
+              mb={2}
+              borderRadius={2}
+              sx={{
+                backgroundColor: "#f8f9fa",
+                boxShadow: "0 2px 6px rgba(0,0,0,0.08)",
+              }}
+            >
+              <ArgonTypography variant="h6" color="dark">
+                {friend.username}
+              </ArgonTypography>
+              <ArgonButton
+                size="small"
+                color="info"
+                onClick={() =>
+                  navigate("/Chatting", {
+                    state: {
+                      friendId: friend.user_id,
+                      friendName: friend.username,
+                    },
+                  })
+                }
+              >
+                Chat
+              </ArgonButton>
+            </ArgonBox>
+          ))
+        )}
+      </ArgonBox>
     </DashboardLayout>
   );
 }
