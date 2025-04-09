@@ -38,8 +38,8 @@ function AnimeList() {
   return (
     <DashboardLayout>
       <DashboardNavbar setSearchQuery={setSearchQuery} />
-      <ArgonBox py={3} px={2} sx={{ backgroundColor: "#121212", minHeight: "100vh" }}>
-        <ArgonTypography variant="h4" color="white" mb={4}>
+      <ArgonBox py={3} px={2} sx={{ backgroundColor: "#ffffff", minHeight: "100vh" }}>
+        <ArgonTypography variant="h4" color="black" mb={4}>
           Animes For You
         </ArgonTypography>
         <Grid container spacing={2}>
@@ -49,7 +49,8 @@ function AnimeList() {
           )
           .map((movie, index) => (
             <Grid item xs={6} sm={4} md={3} lg={2.4} key={index}>
-              <MovieCard
+              <MovieCard 
+              py={3} px={2} sx={{ backgroundColor: "#ffffff", minHeight: "100vh" }}
                 image={movie.poster_url}
                 title={movie.title}
                 genres={movie.genre}
