@@ -14,7 +14,7 @@ const pool = new Pool({
   user: 'postgres',
   host: 'localhost',
   database: 'watchguru',
-  password: 'Mahakkidata',
+  password: '12345678',
   port: 5432,
 });
 
@@ -185,7 +185,7 @@ app.get("/recommendations", isAuthenticated, async (req, res) => {
 
     // Fetch movie recommendations based on the user's favorite genres
     const recommendationsResult = await pool.query(
-      `SELECT content_id, title, poster_url, genre FROM content WHERE genre && $1::text[]`,
+      `SELECT DISTINCT ON (title) content_id, title, poster_url, genre FROM content WHERE genre && $1::text[]`,
       [userGenres]
     );
 
@@ -213,7 +213,7 @@ app.get("/recommendmovies", isAuthenticated, async (req, res) => {
     const userGenres = userGenresResult.rows[0].favorite_genres;
 
     const recommendationsResult = await pool.query(
-      `SELECT content_id, title, poster_url, genre 
+      `SELECT DISTINCT ON (title) content_id, title, poster_url, genre 
        FROM content 
        WHERE content_type = 'movie' AND genre && $1::text[]`,
       [userGenres]
@@ -226,7 +226,7 @@ app.get("/recommendmovies", isAuthenticated, async (req, res) => {
     if (recommendedIds.length > 0) {
 
       othersResult = await pool.query(
-        `SELECT content_id, title, poster_url, genre
+        `SELECT DISTINCT ON (title) content_id, title, poster_url, genre
          FROM content
          WHERE content_type = 'movie' AND content_id != ALL($1::int[])`,
         [recommendedIds]
@@ -234,7 +234,7 @@ app.get("/recommendmovies", isAuthenticated, async (req, res) => {
     } else {
       // If no recommended IDs, just fetch all movies
       othersResult = await pool.query(
-        `SELECT content_id, title, poster_url, genre 
+        `SELECT DISTINCT ON (title) content_id, title, poster_url, genre 
         FROM content WHERE content_type = 'movie'`
       );
     }
@@ -267,7 +267,7 @@ app.get("/recommendanimes", isAuthenticated, async (req, res) => {
     const userGenres = userGenresResult.rows[0].favorite_genres;
 
     const recommendationsResult = await pool.query(
-      `SELECT content_id, title, poster_url, genre 
+      `SELECT DISTINCT ON (title) content_id, title, poster_url, genre 
        FROM content 
        WHERE content_type = 'anime' AND genre && $1::text[]`,
       [userGenres]
@@ -280,7 +280,7 @@ app.get("/recommendanimes", isAuthenticated, async (req, res) => {
     if (recommendedIds.length > 0) {
 
       othersResult = await pool.query(
-        `SELECT content_id, title, poster_url, genre
+        `SELECT DISTINCT ON (title) content_id, title, poster_url, genre
          FROM content
          WHERE content_type = 'anime' AND content_id != ALL($1::int[])`,
         [recommendedIds]
@@ -288,7 +288,7 @@ app.get("/recommendanimes", isAuthenticated, async (req, res) => {
     } else {
       // If no recommended IDs, just fetch all movies
       othersResult = await pool.query(
-        `SELECT content_id, title, poster_url, genre 
+        `SELECT DISTINCT ON (title) content_id, title, poster_url, genre 
         FROM content WHERE content_type = 'anime'`
       );
     }
@@ -321,9 +321,9 @@ app.get("/recommendshows", isAuthenticated, async (req, res) => {
     const userGenres = userGenresResult.rows[0].favorite_genres;
 
     const recommendationsResult = await pool.query(
-      `SELECT content_id, title, poster_url, genre 
+      `SELECT DISTINCT ON (title) content_id, title, poster_url, genre 
        FROM content 
-       WHERE content_type = 'movie' AND genre && $1::text[]`,
+       WHERE content_type = 'show' AND genre && $1::text[]`,
       [userGenres]
     );
 
@@ -334,7 +334,7 @@ app.get("/recommendshows", isAuthenticated, async (req, res) => {
     if (recommendedIds.length > 0) {
 
       othersResult = await pool.query(
-        `SELECT content_id, title, poster_url, genre
+        `SELECT DISTINCT ON (title) content_id, title, poster_url, genre
          FROM content
          WHERE content_type = 'show' AND content_id != ALL($1::int[])`,
         [recommendedIds]
@@ -342,7 +342,7 @@ app.get("/recommendshows", isAuthenticated, async (req, res) => {
     } else {
       // If no recommended IDs, just fetch all movies
       othersResult = await pool.query(
-        `SELECT content_id, title, poster_url, genre 
+        `SELECT DISTINCT ON (title) content_id, title, poster_url, genre 
         FROM content WHERE content_type = 'show'`
       );
     }
@@ -353,7 +353,7 @@ app.get("/recommendshows", isAuthenticated, async (req, res) => {
       others: otherMovies,
      });
   } catch (error) {
-    console.error("Error fetching recommended movies:", error);
+    console.error("Error fetching recommended shows:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 });
