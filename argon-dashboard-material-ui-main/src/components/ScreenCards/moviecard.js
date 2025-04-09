@@ -17,7 +17,7 @@ function MovieCard({ image, title, genres, contentId }) {
         height: 320,
         borderRadius: 2,
         backgroundColor: "#1c1c1c",
-        color: "white",
+        color: "#f5f5f",
         overflow: "hidden",
         transition: "transform 0.3s",
         cursor: "pointer",
@@ -34,7 +34,7 @@ function MovieCard({ image, title, genres, contentId }) {
         sx={{ objectFit: "cover" }}
       />
       <CardContent sx={{ p: 1 }}>
-        <Typography variant="body2" fontWeight="bold" noWrap>
+        <Typography variant="body2" fontWeight="bold" noWrap sx={{ color: "#ffffff" }}>
           {title}
         </Typography>
         <Box mt={1} display="flex" gap={0.5} flexWrap="wrap">
@@ -44,7 +44,7 @@ function MovieCard({ image, title, genres, contentId }) {
               label={genre}
               size="small"
               sx={{
-                backgroundColor: "#333",
+                backgroundColor: "#E2F5F6",
                 color: "white",
                 fontSize: "0.7rem",
                 height: "20px",

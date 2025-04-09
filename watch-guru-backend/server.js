@@ -14,7 +14,7 @@ const pool = new Pool({
   user: 'postgres',
   host: 'localhost',
   database: 'watchguru',
-  password: '12345678',
+  password: 'chocolate',
   port: 5432,
 });
 
