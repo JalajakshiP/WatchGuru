@@ -3,9 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { Button, Box, Typography } from "@mui/material";
 import { useEffect } from "react";
 import { apiUrl } from "config/config";
+import bgImage from "assets/images/background_images/4.jpg"; 
 
-const backgroundImage =
-  "https://images.unsplash.com/photo-1581905764498-d52c7f7d4bcf?auto=format&fit=crop&w=1470&q=80"; // You can replace this with your own
 
 export default function HomePage() {
   const navigate = useNavigate();
@@ -35,7 +34,7 @@ export default function HomePage() {
     <Box
       sx={{
         height: "100vh",
-        backgroundImage: `url(${backgroundImage})`,
+        backgroundImage: `url(${bgImage})`,
         backgroundSize: "cover",
         backgroundPosition: "center",
         display: "flex",
@@ -66,6 +65,7 @@ export default function HomePage() {
           variant="outlined"
           color="secondary"
           onClick={() => navigate("/authentication/sign-in")}
+          sx={{ color: "#000000", borderColor: "#6c5ce7" }} 
         >
           Already have an account?
         </Button>

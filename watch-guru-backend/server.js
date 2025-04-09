@@ -14,7 +14,7 @@ const pool = new Pool({
   user: 'postgres',
   host: 'localhost',
   database: 'watchguru',
-  password: '12345678',
+  password: 'chocolate',
   port: 5432,
 });
 
@@ -44,16 +44,12 @@ app.use(
 // Authentication APIs
 // Signup, Login, IsLoggedIn and Logout
 
-// TODO: Implement authentication middleware
-// Redirect unauthenticated users to the login page with respective status code
+e
 function isAuthenticated(req, res, next) {
   req.session.userId ? next() : res.status(400).json({ message: "Unauthorized" });
 
 }
 
-// TODO: Implement user signup logic
-// return JSON object with the following fields: {username, email, password}
-// use correct status codes and messages mentioned in the lab document
 console.log("Starting backend...");
 app.get("/", (req, res) => {
   res.send("Backend is up and running!");
@@ -99,9 +95,7 @@ app.post('/signup', async (req, res) => {
 });
 
 
-// TODO: Implement user signup logic
-// return JSON object with the following fields: {email, password}
-// use correct status codes and messages mentioned in the lab document
+
 app.post("/login", async (req, res) => {
   const { email, password } = req.body;
 
@@ -136,8 +130,6 @@ app.post("/login", async (req, res) => {
 });
 
 
-// TODO: Implement API used to check if the client is currently logged in or not.
-// use correct status codes and messages mentioned in the lab document
 app.get("/isLoggedIn", async (req, res) => {
   // console.log(req.session.userId);
   if (req.session.userId) {
@@ -150,8 +142,7 @@ app.get("/isLoggedIn", async (req, res) => {
   }
 });
 
-// TODO: Implement API used to logout the user
-// use correct status codes and messages mentioned in the lab document
+
 app.post("/logout", (req, res) => {
   req.session.destroy((err) => {
     if (err) {

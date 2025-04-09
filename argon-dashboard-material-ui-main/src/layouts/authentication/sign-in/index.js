@@ -29,13 +29,13 @@ import ArgonBox from "components/ArgonBox";
 import ArgonTypography from "components/ArgonTypography";
 import ArgonInput from "components/ArgonInput";
 import ArgonButton from "components/ArgonButton";
-
+import bgimage from "assets/images/background_images/watchguru.png";
 // Authentication layout components
 import IllustrationLayout from "layouts/authentication/components/IllustrationLayout";
 
 // Image
-const bgImage =
-  "https://raw.githubusercontent.com/creativetimofficial/public-assets/master/argon-dashboard-pro/assets/img/signin-ill.jpg";
+// const bgImage =
+//   "https://raw.githubusercontent.com/creativetimofficial/public-assets/master/argon-dashboard-pro/assets/img/signin-ill.jpg";
 
 function Illustration() {
   const navigate = useNavigate();
@@ -82,9 +82,12 @@ function Illustration() {
         }), 
       });
 
-      if(!response.ok) throw new Error("Login failed");
 
       const data = await response.json();
+      if(!response.ok){ throw new Error(data.message);
+        return;
+      };
+
       localStorage.setItem("user", data.name);
       
       navigate("/dashboard");
@@ -98,10 +101,10 @@ function Illustration() {
       title="Sign In"
       description="Enter your email and password to sign in"
       illustration={{
-        image: bgImage,
+        image: bgimage,
         title: '"Attention is the new currency"',
         description:
-          "The more effortless the writing looks, the more effort the writer actually put into the process.",
+          "  Spend it wisely. Discover what’s worth watching",
       }}
     >
       <ArgonBox component="form" role="form">
@@ -111,6 +114,11 @@ function Illustration() {
         <ArgonBox mb={2}>
           <ArgonInput type="password" placeholder="Password" size="large" value={password} onChange={e => setPassword(e.target.value)} />
         </ArgonBox>
+        {error && (
+                  <ArgonTypography variant="caption" color="error" textAlign="center" display="block" mb={2}>
+                    {error}
+                  </ArgonTypography>
+                )}
         <ArgonBox mt={4} mb={1}>
           <ArgonButton color="info" size="large" fullWidth
             onClick={handleContinue}>
@@ -120,7 +128,7 @@ function Illustration() {
         </ArgonBox>
         <ArgonBox mt={3} textAlign="center">
           <ArgonTypography variant="button" color="text" fontWeight="regular">
-            Don&apos;t have an account?{" "}
+            Don't have an account?{" "}
             <ArgonTypography
               component={Link}
               to="/authentication/sign-up"

@@ -22,13 +22,13 @@ Coded by www.creative-tim.com
 
 const colors = {
   background: {
-    default: "#f8f9fa",
-    dark: "#172b4d",
+    default: "#f5f0eb", // soft light beige
+    dark: "#1a1a1a",     // deep dark
   },
 
   text: {
-    main: "#67748e",
-    focus: "#67748e",
+    main: "#2d2d2d",     // soft black for readability
+    focus: "#ff6f61",    // peach-coral highlight
   },
 
   transparent: {
@@ -41,49 +41,49 @@ const colors = {
   },
 
   black: {
-    light: "#141414",
+    light: "#1c1c1c",
     main: "#000000",
     focus: "#000000",
   },
 
   primary: {
-    main: "#5e72e4",
-    focus: "#5e72e4",
+    main: "#ff6f61",     // peach coral
+    focus: "#ff9478",    // light peach
   },
 
   secondary: {
-    main: "#8392ab",
-    focus: "#8392ab",
+    main: "#6c5ce7",     // rich purple
+    focus: "#a29bfe",    // lavender
   },
 
   info: {
-    main: "#11cdef",
-    focus: "#11cdef",
+    main: "#00bcd4",     // teal
+    focus: "#4dd0e1",
   },
 
   success: {
-    main: "#2dce89",
-    focus: "#2dce89",
+    main: "#2ecc71",     // emerald green
+    focus: "#58d68d",
   },
 
   warning: {
-    main: "#fb6340",
-    focus: "#fb6340",
+    main: "#f39c12",     // amber
+    focus: "#f4c430",
   },
 
   error: {
-    main: "#f5365c",
-    focus: "#f5365c",
+    main: "#e74c3c",     // cinematic red
+    focus: "#ff6b6b",
   },
 
   light: {
-    main: "#e9ecef",
-    focus: "#e9ecef",
+    main: "#f8f9fa",
+    focus: "#e0e0e0",
   },
 
   dark: {
-    main: "#344767",
-    focus: "#344767",
+    main: "#2d3436",     // charcoal
+    focus: "#1e272e",
   },
 
   grey: {
@@ -100,43 +100,36 @@ const colors = {
 
   gradients: {
     primary: {
-      main: "#5e72e4",
-      state: "#825ee4",
+      main: "#ff6f61",
+      state: "#ff9478",
     },
-
     secondary: {
-      main: "#627594",
-      state: "#a8b8d8",
+      main: "#6c5ce7",
+      state: "#a29bfe",
     },
-
     info: {
-      main: "#1171ef",
-      state: "#11cdef",
+      main: "#00bcd4",
+      state: "#4dd0e1",
     },
-
     success: {
-      main: "#2dce89",
-      state: "#2dcecc",
+      main: "#2ecc71",
+      state: "#58d68d",
     },
-
     warning: {
-      main: "#fb6340",
-      state: "#fbb140",
+      main: "#f39c12",
+      state: "#f4c430",
     },
-
     error: {
-      main: "#f5365c",
-      state: "#f56036",
+      main: "#e74c3c",
+      state: "#ff6b6b",
     },
-
     light: {
       main: "#ced4da",
       state: "#ebeff4",
     },
-
     dark: {
-      main: "#212229",
-      state: "#212529",
+      main: "#2d3436",
+      state: "#1e272e",
     },
   },
 
@@ -145,57 +138,46 @@ const colors = {
       main: "#3b5998",
       dark: "#344e86",
     },
-
     twitter: {
       main: "#55acee",
       dark: "#3ea1ec",
     },
-
     instagram: {
-      main: "#125688",
-      dark: "#0e456d",
+      main: "#d6249f",
+      dark: "#833ab4",
     },
-
     linkedin: {
       main: "#0077b5",
       dark: "#00669c",
     },
-
     pinterest: {
       main: "#cc2127",
       dark: "#b21d22",
     },
-
     youtube: {
       main: "#e52d27",
       dark: "#d41f1a",
     },
-
     vimeo: {
       main: "#1ab7ea",
       dark: "#13a3d2",
     },
-
     slack: {
       main: "#3aaf85",
       dark: "#329874",
     },
-
     dribbble: {
       main: "#ea4c89",
       dark: "#e73177",
     },
-
     github: {
       main: "#24292e",
       dark: "#171a1d",
     },
-
     reddit: {
       main: "#ff4500",
       dark: "#e03d00",
     },
-
     tumblr: {
       main: "#35465c",
       dark: "#2a3749",
@@ -204,100 +186,86 @@ const colors = {
 
   alertColors: {
     primary: {
-      main: "#5e72e4",
-      state: "#673bde",
-      border: "#cfd5f7",
+      main: "#ff6f61",
+      state: "#ff9478",
+      border: "#ffd7cf",
     },
-
     secondary: {
-      main: "#627594",
-      state: "#8ca1cb",
-      border: "#dadee6",
+      main: "#6c5ce7",
+      state: "#a29bfe",
+      border: "#dcd7fa",
     },
-
     info: {
-      main: "#1171ef",
-      state: "#0eadca",
-      border: "#b8f0fa",
+      main: "#00bcd4",
+      state: "#4dd0e1",
+      border: "#c2f5fa",
     },
-
     success: {
-      main: "#2dce89",
-      state: "#26adab",
-      border: "#c0f0dc",
+      main: "#2ecc71",
+      state: "#58d68d",
+      border: "#c8f5de",
     },
-
     warning: {
-      main: "#fb6340",
-      state: "#faa118",
-      border: "#fed0c6",
+      main: "#f39c12",
+      state: "#f4c430",
+      border: "#ffebc3",
     },
-
     error: {
-      main: "#f5365c",
-      state: "#f3410f",
-      border: "#fcc3ce",
+      main: "#e74c3c",
+      state: "#ff6b6b",
+      border: "#ffd0d0",
     },
-
     light: {
-      main: "#ced4da",
-      state: "#d1dae6",
-      border: "#f8f9fa",
+      main: "#f8f9fa",
+      state: "#e0e0e0",
+      border: "#ffffff",
     },
-
     dark: {
-      main: "#212229",
-      state: "#0f1112",
-      border: "#c2c8d1",
+      main: "#2d3436",
+      state: "#1e272e",
+      border: "#444",
     },
   },
 
   badgeColors: {
     primary: {
-      background: "#eaecfb",
-      text: "##2643e9",
+      background: "#ffe8e3",
+      text: "#ff6f61",
     },
-
     secondary: {
-      background: "#e4e8ed",
-      text: "#5974a2",
+      background: "#ece9fe",
+      text: "#6c5ce7",
     },
-
     info: {
-      background: "#aaedf9",
-      text: "#03acca",
+      background: "#d1f7fb",
+      text: "#00bcd4",
     },
-
     success: {
-      background: "#b0eed3",
-      text: "#1aae6f",
+      background: "#d4f8e8",
+      text: "#2ecc71",
     },
-
     warning: {
-      background: "#fee6e0",
-      text: "#ff3709",
+      background: "#fff3cd",
+      text: "#f39c12",
     },
-
     error: {
-      background: "#fdd1da",
-      text: "#f80031",
+      background: "#ffe2e2",
+      text: "#e74c3c",
     },
-
     light: {
       background: "#ffffff",
       text: "#c7d3de",
     },
-
     dark: {
-      background: "#8097bf",
+      background: "#a4a4a4",
       text: "#1e2e4a",
     },
   },
 
   inputColors: {
-    borderColor: { main: "#d2d6da", focus: "#11cdef" },
-    error: "#f5365c",
-    success: "#2dce89",
+    borderColor: { main: "#d2d6da", focus: "#ff6f61" },
+    error: "#e74c3c",
+    success: "#2ecc71",
   },
 
   sliderColors: {
@@ -309,7 +277,7 @@ const colors = {
   },
 
   tabs: {
-    indicator: { boxShadow: "#ddd" },
+    indicator: { boxShadow: "#ff6f61" },
   },
 };
 
