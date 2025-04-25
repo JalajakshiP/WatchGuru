@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { 
-  Grid, Card, CardMedia, CardContent, 
+  Button, Grid, Card, CardMedia, CardContent, 
   Typography, Chip, Box, Divider,
-  CircularProgress
+  CircularProgress, Rating, TextField, Avatar
 } from "@mui/material";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import DashboardNavbar from "examples/Navbars/DashboardNavbar";
@@ -15,6 +15,12 @@ function MovieDetails() {
   const [similarMovies, setSimilarMovies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [userRating, setUserRating] = useState(0);
+  const [reviewText, setReviewText] = useState("");
+  const [reviews, setReviews] = useState([]);
+  const [ratingAvg, setRatingAvg] = useState(null);
+  const [userId, setUserId] = useState(null);
 
   useEffect(() => {
     console.log("Fetching details for movie ID:", id); // Should log "4"
@@ -45,8 +51,23 @@ function MovieDetails() {
           throw new Error("No content data received");
         }
 
+
+        setUserId(result.userId);
         setMovie(result.content);
         setSimilarMovies(result.similar || []);
+        setRatingAvg(result.rating_avg);
+
+        const reviewResponse = await fetch(`${apiUrl}/reviews/${id}`, {
+          method: "GET",
+          credentials: "include",
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        console.log("Response status:", reviewResponse.status);
+        const reviewData = await reviewResponse.json();
+
+        setReviews(reviewData);
         setError(null);
       } catch (error) {
         console.error("Fetch error:", error);
@@ -58,6 +79,43 @@ function MovieDetails() {
 
     fetchMovieDetails();
   }, [id]);
+
+  const submitReview = async () => {
+    if (userRating === 0 || reviewText.trim() === "") {
+      alert("Please provide a rating and review text.");
+      return;
+    }
+
+    const reviewData = {
+      content_id: id,
+      rating: userRating,
+      review_text: reviewText,
+    };
+
+    try {
+      const response = await fetch(`${apiUrl}/reviews`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(reviewData),
+      });
+
+      if (response.ok) {
+        const newReview = await response.json();
+        setReviews([newReview, ...reviews]);
+        setShowReviewForm(false);
+        setReviewText("");
+        setUserRating(0);
+        // Optionally, update the content's rating_avg if needed here
+      } else {
+        alert("Failed to submit review.");
+      }
+    } catch (error) {
+      console.error("Error submitting review:", error);
+    }
+  };
 
   if (loading) {
     return (
@@ -184,8 +242,106 @@ function MovieDetails() {
                   {movie.age_rating || "Not Rated"}
                 </Typography>
               </Grid>
+
+              <Grid item xs={6} sm={4}>
+                <Typography variant="h6">Average Rating: {movie.rating_avg.toFixed(1)} / 10</Typography>
+                </Grid>
             </Grid>
           </Box>
+          
+          {/* Reviews */}
+          <Button onClick={() => setShowReviewForm((prev) => !prev)}>
+            {showReviewForm ? "Cancel" : "Give a rating?"}
+          </Button>
+
+          {showReviewForm && (
+            <Box mt={2}>
+              <Typography variant="subtitle1">Your Rating:</Typography>
+              <Rating
+                name="user-rating"
+                max={10}
+                value={userRating}
+                onChange={(e, newValue) => setUserRating(newValue)}
+              />
+              <TextField
+                label="Your Review"
+                multiline
+                rows={3}
+                fullWidth
+                value={reviewText}
+                onChange={(e) => setReviewText(e.target.value)}
+                sx={{ mt: 2 }}
+              />
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={submitReview}
+                sx={{ mt: 2 }}
+              >
+                Submit Review
+              </Button>
+            </Box>
+          )}
+
+          {/* Display Existing Reviews */}
+          <Box mt={4}>
+            <Typography variant="h6" sx={{ fontWeight: "bold", mb: 2 }}>
+              Reviews
+            </Typography>
+            {reviews.length > 0 ? (
+              reviews.map((review) => (
+                <Box
+                  key={review.review_id}
+                  sx={{
+                    mb: 3,
+                    borderBottom: "1px solid #ccc",
+                    pb: 2,
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 2,
+                  }}
+                >
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                    {/* User Avatar */}
+                    <Avatar alt={review.username} sx={{ width: 40, height: 40 }} />
+                    
+                    {/* Username and Rating */}
+                    <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                      <Typography variant="body2" sx={{ fontWeight: "bold" }}>
+                        {review.username}
+                      </Typography>
+                      <Rating value={review.rating} max={10} readOnly sx={{ fontSize: 20 }} />
+                    </Box>
+
+                    {/* Date */}
+                    {review.created_at && (
+                      <Typography variant="body2" sx={{ fontSize: 12, color: "gray" }}>
+                        {new Date(review.created_at).toLocaleDateString()}
+                      </Typography>
+                    )}
+                  </Box>
+
+                  {/* Review Text */}
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      mt: 1,
+                      lineHeight: 1.6,
+                      maxHeight: 100,
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                    }}
+                  >
+                    {review.review_text}
+                  </Typography>
+                </Box>
+              ))
+            ) : (
+              <Typography>No reviews yet</Typography>
+            )}
+          </Box>
+
+
 
           {/* Cast */}
           {movie.cast && movie.cast.length > 0 && (

@@ -14,7 +14,7 @@ const pool = new Pool({
   user: 'postgres',
   host: 'localhost',
   database: 'watchguru',
-  password: 'chocolate',
+  password: 'Mahakkidata',
   port: 5432,
 });
 
@@ -87,7 +87,7 @@ app.post('/signup', async (req, res) => {
 
     req.session.userId = newUser.rows[0].user_id;
 
-    res.status(200).json({name: newUser.rows[0].username, message: "User registered successfully" });
+    res.status(200).json({name: name, message: "User registered successfully" });
   } catch (error) {
     console.error("Signup Error:", error);
     res.status(500).json({ message: "Internal server error" });
@@ -536,11 +536,15 @@ app.get("/content/:contentId", isAuthenticated, async (req, res) => {
        LIMIT 6`,
       [contentId, content.genre]
     );
+    
+    //console.log("Content fetched successfully:", content);
 
     res.status(200).json({
       content,
-      similar: similarContent.rows
+      similar: similarContent.rows,
+      userId: req.session.userId
     });
+
   } catch (error) {
     console.error("Error fetching content:", error);
   }
@@ -649,3 +653,135 @@ app.post("/updateProfile", isAuthenticated, async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 });
+
+// Reviews API
+// POST: Create a new review
+app.post("/reviews", isAuthenticated, async (req, res) => {
+  try {
+    const user_id = req.session.userId;
+    const {content_id, rating, review_text } = req.body;
+
+    // Insert new review
+    const result = await pool.query(
+      `INSERT INTO Reviews (user_id, content_id, rating, review_text)
+       VALUES ($1, $2, $3, $4) RETURNING *`,
+      [user_id, content_id, rating, review_text]
+    );
+
+
+    // Update the content's average rating
+    const avgResult = await pool.query(
+      `SELECT AVG(rating) AS average_rating
+       FROM Reviews
+       WHERE content_id = $1`,
+      [content_id]
+    );
+
+    const averageRating = avgResult.rows[0].average_rating;
+
+    await pool.query(
+      `UPDATE Content
+       SET rating_avg = $1
+       WHERE content_id = $2`,
+      [averageRating, content_id]
+    );
+
+    res.status(200).json(result.rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET: Reviews for a specific content
+app.get("/reviews/:content_id", isAuthenticated, async (req, res) => {
+  try {
+    const { content_id } = req.params;
+    console.log("hello");
+    const result = await pool.query(
+      `SELECT r.*, u.username
+       FROM Reviews r
+       JOIN Users u ON r.user_id = u.user_id
+       WHERE r.content_id = $1
+       ORDER BY r.created_at DESC`,
+      [content_id]
+    );
+    console.log("hello");
+    console.log(result.rows);
+    res.status(200).json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// PUT: Edit a review
+app.put("/reviews/:review_id", isAuthenticated, async (req, res) => {
+  try {
+    const { review_id } = req.params;
+    const { rating, review_text } = req.body;
+
+    const result = await pool.query(
+      `UPDATE Reviews
+       SET rating = $1, review_text = $2, updated_at = CURRENT_TIMESTAMP
+       WHERE review_id = $3
+       RETURNING *`,
+      [rating, review_text, review_id]
+    );
+    
+    // Recalculate and update content's average rating
+    const avgResult = await pool.query(
+      `SELECT AVG(rating) AS average_rating
+       FROM Reviews
+       WHERE content_id = (SELECT content_id FROM Reviews WHERE review_id = $1)`,
+      [review_id]
+    );
+    const averageRating = avgResult.rows[0].average_rating;
+
+    await pool.query(
+      `UPDATE Content
+       SET rating_avg = $1
+       WHERE content_id = (SELECT content_id FROM Reviews WHERE review_id = $2)`,
+      [averageRating, review_id]
+    );
+
+    res.status(200).json(result.rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// DELETE: Delete a review
+app.delete("/reviews/:review_id", async (req, res) => {
+  try {
+
+    const { review_id } = req.params;
+
+    const contentIdResult = await pool.query(
+      `SELECT content_id FROM Reviews WHERE review_id = $1`,
+      [review_id]
+    );
+    const content_id = contentIdResult.rows[0].content_id;
+
+    await pool.query(`DELETE FROM Reviews WHERE review_id = $1`, [review_id]);
+
+    // Recalculate and update content's average rating
+    const avgResult = await pool.query(
+      `SELECT AVG(rating) AS average_rating
+       FROM Reviews
+       WHERE content_id = $1`,
+      [content_id]
+    );
+    const averageRating = avgResult.rows[0].average_rating;
+
+    await pool.query(
+      `UPDATE Content
+       SET rating_avg = $1
+       WHERE content_id = $2`,
+      [averageRating, content_id]
+    );
+
+    res.status(200).json({ message: "Review deleted" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+

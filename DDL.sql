@@ -47,3 +47,25 @@ CREATE TABLE messages (
   is_read BOOLEAN DEFAULT FALSE
 );
 -- chats
+
+-- reviews
+CREATE TABLE Reviews (
+    review_id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL,
+    content_id INTEGER NOT NULL,
+    rating INTEGER CHECK (rating >= 1 AND rating <= 10),
+    review_text TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_user
+      FOREIGN KEY(user_id)
+      REFERENCES Users(user_id)
+      ON DELETE CASCADE,
+
+    CONSTRAINT fk_content
+      FOREIGN KEY(content_id)
+      REFERENCES Content(content_id)
+      ON DELETE CASCADE
+);
+-- reviews
