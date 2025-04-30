@@ -69,3 +69,14 @@ CREATE TABLE Reviews (
       ON DELETE CASCADE
 );
 -- reviews
+
+CREATE TABLE notifications (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+  type TEXT NOT NULL CHECK (type IN ('friend_request', 'friend_accept', 'message')),
+  from_user INTEGER REFERENCES users(user_id) ON DELETE SET NULL,
+  content TEXT,
+  created_at TIMESTAMP DEFAULT NOW(),
+  is_read BOOLEAN DEFAULT FALSE
+);
+-- notifications

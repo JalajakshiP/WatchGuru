@@ -14,7 +14,7 @@ const pool = new Pool({
   user: 'postgres',
   host: 'localhost',
   database: 'watchguru',
-  password: 'Mahakkidata',
+  password: '12345678',
   port: 5432,
 });
 
@@ -436,13 +436,23 @@ app.post("/send-friend-request", isAuthenticated, async (req, res) => {
         return res.status(400).json({ message: "Already friends" });
       }
     }
+    const sender = await pool.query(
+      "SELECT username FROM users WHERE user_id = $1",
+      [userId]
+    );
+    const senderName = sender.rows[0]?.username || `User ${userId}`;
 
     await pool.query(
       "INSERT INTO friends (user_id, friend_id, status) VALUES ($1, $2, 'pending')",
       [userId, friendId]
     );
 
-
+    await pool.query(
+      `INSERT INTO notifications (user_id, type, from_user, content)
+       VALUES ($1, 'friend_request', $2, $3)`,
+      [friendId, userId, `New friend request from ${senderName}`]
+    );
+    
 
     res.status(200).json({ message: "Friend request sent" });
   } catch (error) {
@@ -474,6 +484,18 @@ app.post("/respond-friend-request", isAuthenticated, async (req, res) => {
          WHERE user_id = $1 AND friend_id = $2`,
         [friendId, userId]
       );
+      const responder = await pool.query(
+        "SELECT username FROM users WHERE user_id = $1",
+        [userId]
+      );
+      const responderName = responder.rows[0]?.username || `User ${userId}`;
+    
+      await pool.query(
+        `INSERT INTO notifications (user_id, type, from_user, content)
+         VALUES ($1, 'friend_accept', $2, $3)`,
+        [friendId, userId, `${responderName} accepted your friend request`]
+      );
+      
     } else {
       await pool.query(
         `DELETE FROM friends 
@@ -616,7 +638,18 @@ app.post("/messages", async (req, res) => {
        VALUES ($1, $2, $3)`,
       [senderId, friendId, msg]
     );
-
+    const sender = await pool.query(
+      "SELECT username FROM users WHERE user_id = $1",
+      [senderId]
+    );
+    const senderName = sender.rows[0]?.username || `User ${senderId}`;
+    
+    await pool.query(
+      `INSERT INTO notifications (user_id, type, from_user, content)
+       VALUES ($1, 'message', $2, $3)`,
+      [friendId, senderId, `New message from ${senderName}`]
+    );
+    
     res.status(201).json({ message: "Message sent" });
   } catch (err) {
     console.error("Error sending message:", err);
@@ -782,6 +815,57 @@ app.delete("/reviews/:review_id", async (req, res) => {
     res.status(200).json({ message: "Review deleted" });
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+app.get("/notifications", isAuthenticated, async (req, res) => {
+  const { user } = req.query;  // Extracting the 'user' from the query parameter
+  if (!user) {
+    return res.status(400).json({ error: "User ID is required" });
+  }
+  try {
+    const userResult = await pool.query(
+      'SELECT user_id FROM users WHERE username = $1',
+      [user]
+    );
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    const userId = userResult.rows[0].user_id;
+    const notificationsQuery = `
+      SELECT n.id, n.type, n.content, n.created_at, n.is_read, n.from_user,
+             u.username AS from_user
+      FROM notifications n
+      LEFT JOIN users u ON n.from_user = u.user_id
+      WHERE n.user_id = $1 AND n.is_read = false
+      ORDER BY n.created_at DESC
+    `;
+    const notificationsResult = await pool.query(notificationsQuery, [userId]);
+
+    return res.json({ notifications: notificationsResult.rows });
+  } catch (error) {
+    console.error("Error fetching notifications:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+// Mark notifications as read
+app.post("/notifications/read", async (req, res) => {
+  const { notificationId } = req.body;
+
+  if (!notificationId) {
+    return res.status(400).json({ error: "Notification ID is required" });
+  }
+
+  try {
+    await pool.query(
+      "UPDATE notifications SET is_read = TRUE WHERE id = $1",
+      [notificationId]
+    );
+    res.status(200).json({ message: "Notification marked as read" });
+  } catch (err) {
+    console.error("Error marking notification as read:", err);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 

@@ -1,19 +1,4 @@
 import React from 'react';
-/**
-=========================================================
-* Argon Dashboard 2 MUI - v3.0.1
-=========================================================
-
-* Product Page: https://www.creative-tim.com/product/argon-dashboard-material-ui
-* Copyright 2023 Creative Tim (https://www.creative-tim.com)
-
-Coded by www.creative-tim.com
-
- =========================================================
-
-* The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-*/
-
 import { useState, useEffect } from "react";
 
 // react-router components
@@ -55,6 +40,8 @@ import {
   setMiniSidenav,
   setOpenConfigurator,
 } from "context";
+import { apiUrl } from "config/config";
+import Badge from "@mui/material/Badge";
 
 // Images
 import team2 from "assets/images/team-2.jpg";
@@ -68,6 +55,7 @@ function DashboardNavbar({ absolute, light, isMini, setSearchQuery }) {
   const route = useLocation().pathname.split("/").slice(1);
 
   const [searchText, setSearchText] = useState("");
+  const [notifications, setNotifications] = useState([]);
 
   const handleSearchChange = (event) => {
     const value = event.target.value;
@@ -77,6 +65,27 @@ function DashboardNavbar({ absolute, light, isMini, setSearchQuery }) {
     }
   };
 
+  useEffect(() => {
+    const getNotifications = async () => {
+      const username = localStorage.getItem("user");
+      if (username) {
+        try {
+          const response = await fetch(`${apiUrl}/notifications?user=${username}`, {
+            method: "GET",
+            credentials: "include",
+          });
+          if (!response.ok) throw new Error("Failed to fetch notifications");
+          const data = await response.json();
+          setNotifications(data.notifications); // Assuming data contains notifications array
+        } catch (error) {
+          console.error("Error fetching notifications:", error);
+          setNotifications([]); // Handle error by setting an empty array
+        }
+      }
+    };
+  
+    getNotifications(); // Fetch notifications when the component mounts or username changes
+  }, []);
 
   useEffect(() => {
     // Setting the navbar type
@@ -108,7 +117,27 @@ function DashboardNavbar({ absolute, light, isMini, setSearchQuery }) {
   const handleConfiguratorOpen = () => setOpenConfigurator(dispatch, !openConfigurator);
   const handleOpenMenu = (event) => setOpenMenu(event.currentTarget);
   const handleCloseMenu = () => setOpenMenu(false);
-
+  const handleNotificationClick = async (notif) => {
+    try{
+    await fetch(`${apiUrl}/notifications/read`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ notificationId: notif.id }),
+    });
+    handleCloseMenu();
+    if (notif.type === "message") {
+      window.location.href = `/messages?friendId=${notif.from_user}`;
+    } else if (notif.type === "friend_request" || notif.type === "friend_accept") {
+      window.location.href = `/friends`;
+    }
+    setNotifications((prev) => prev.filter((n) => n.id !== notif.id));
+  }
+  catch (error) {
+    console.error("Error marking notification as read:", error);
+  }
+  };
   // Render the notifications menu
   const renderMenu = () => (
     <Menu
@@ -122,29 +151,27 @@ function DashboardNavbar({ absolute, light, isMini, setSearchQuery }) {
       onClose={handleCloseMenu}
       sx={{ mt: 2 }}
     >
+      {notifications.length === 0 ? (
       <NotificationItem
-        image={<img src={team2} alt="person" />}
-        title={["Movie Recommedation", "from Clairo"]}
-        date="13 minutes ago"
+        title={["No new notifications"]}
+        date=""
         onClick={handleCloseMenu}
       />
-      <NotificationItem
-        image={<img src={logoSpotify} alt="person" />}
-        title={["New album", "by Travis Scott"]}
-        date="1 day"
-        onClick={handleCloseMenu}
-      />
-      <NotificationItem
-        color="secondary"
-        image={
-          <Icon fontSize="small" sx={{ color: ({ palette: { white } }) => white.main }}>
-            payment
-          </Icon>
-        }
-        title={["", "Payment successfully completed"]}
-        date="2 days"
-        onClick={handleCloseMenu}
-      />
+    ) : (
+      notifications.map((notif, index) => (
+        <NotificationItem
+          key={index}
+          image={
+            <Icon fontSize="small">
+              {notif.type === "friend_request" ? "person_add" : "person"}
+            </Icon>
+          }
+          title={[notif.content]}
+          date={new Date(notif.created_at).toLocaleString()}
+          onClick={() => handleNotificationClick(notif)}
+        />
+      ))
+    )}
     </Menu>
   );
   const username = localStorage.getItem("user");
@@ -228,7 +255,9 @@ function DashboardNavbar({ absolute, light, isMini, setSearchQuery }) {
                 variant="contained"
                 onClick={handleOpenMenu}
               >
-                <Icon>notifications</Icon>
+                <Badge badgeContent={notifications.length} color="error">
+                  <Icon>notifications</Icon>
+                </Badge>
               </IconButton>
               {renderMenu()}
             </ArgonBox>
