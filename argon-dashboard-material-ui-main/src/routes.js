@@ -14,6 +14,9 @@ import Anime from "layouts/anime/anime";
 import Logout from "layouts/authentication/logout/logout";
 import UpdateProfile from "layouts/profile/components/Update";
 import MovieDetails from  "layouts/moviedetails";
+import Favourites from "layouts/liked/liked";
+import MyList from "layouts/watchlist/watchlist";
+import Watched from "layouts/history/history";
 // Argon Dashboard 2 MUI components
 import ArgonBox from "components/ArgonBox";
 import ProtectedRoute from "layouts/authentication/components/ProtectedRoute/ProtectedRoutes";
@@ -159,6 +162,45 @@ const routes = [
     component: (
       <ProtectedRoute>
         <Anime />
+      </ProtectedRoute>
+    ),
+    icon: <ArgonBox component="i" color="info" fontSize="14px" className="ni ni-planet" />,
+    layout: "dashboard",
+  },
+  {
+    type: "route",
+    name: "Favourites",
+    key: "liked",
+    route: "/liked",
+    component: (
+      <ProtectedRoute>
+        <Favourites />
+      </ProtectedRoute>
+    ),
+    icon: <ArgonBox component="i" color="info" fontSize="14px" className="ni ni-planet" />,
+    layout: "dashboard",
+  },
+  {
+    type: "route",
+    name: "MyList",
+    key: "watchlist",
+    route: "/watchlist",
+    component: (
+      <ProtectedRoute>
+        <MyList />
+      </ProtectedRoute>
+    ),
+    icon: <ArgonBox component="i" color="info" fontSize="14px" className="ni ni-planet" />,
+    layout: "dashboard",
+  },
+  {
+    type: "route",
+    name: "Watched",
+    key: "watched",
+    route: "/history",
+    component: (
+      <ProtectedRoute>
+        <Watched />
       </ProtectedRoute>
     ),
     icon: <ArgonBox component="i" color="info" fontSize="14px" className="ni ni-planet" />,

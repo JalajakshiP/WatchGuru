@@ -40,8 +40,8 @@ CREATE TABLE friends (
 -- chats 
 CREATE TABLE messages (
   message_id SERIAL PRIMARY KEY,
-  sender_id INTEGER REFERENCES users(user_id),
-  receiver_id INTEGER REFERENCES users(user_id),
+ sender_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
+  receiver_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
   message TEXT NOT NULL,
   timestamp TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
   is_read BOOLEAN DEFAULT FALSE
@@ -110,4 +110,23 @@ user_id1 INT REFERENCES users(user_id),
 user_id2 INT REFERENCES users(user_id),
 similarity FLOAT NOT NULL,
 PRIMARY KEY (user_id1, user_id2)
+);
+
+CREATE TABLE IF NOT EXISTS likes (
+  user_id INTEGER REFERENCES users(user_id)ON DELETE CASCADE,
+  content_id INTEGER REFERENCES content(content_id)ON DELETE CASCADE,
+  PRIMARY KEY (user_id, content_id)
+);
+--liked ones
+CREATE TABLE IF NOT EXISTS watchlist (
+  user_id INTEGER REFERENCES users(user_id)ON DELETE CASCADE,
+  content_id INTEGER REFERENCES content(content_id)ON DELETE CASCADE,
+  PRIMARY KEY (user_id, content_id)
+);
+--watchlist
+CREATE TABLE IF NOT EXISTS watch_history (
+  user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
+  content_id INTEGER REFERENCES content(content_id) ON DELETE CASCADE,
+  watched_at TIMESTAMP DEFAULT NOW(),
+  PRIMARY KEY (user_id, content_id)
 );

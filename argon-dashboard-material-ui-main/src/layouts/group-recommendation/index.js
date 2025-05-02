@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   Box, Typography, Avatar, Button, CircularProgress,
   Dialog, DialogTitle, DialogContent, DialogActions,
-  Card, CardMedia, CardContent, Divider, Alert, List, 
+  Card, CardContent, Divider, Alert, List, 
   ListItem, ListItemAvatar, ListItemText, Slide, Grow,
   Chip, Grid
 } from '@mui/material';
@@ -10,6 +10,7 @@ import CasinoIcon from '@mui/icons-material/Casino';
 import { apiUrl } from "config/config";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import DashboardNavbar from "examples/Navbars/DashboardNavbar";
+import MovieCard from "components/ScreenCards/moviecard";
 
 const GroupRecommendation = () => {
   const [friends, setFriends] = useState([]);
@@ -297,37 +298,36 @@ const GroupRecommendation = () => {
                     <Typography variant="body1" sx={{ mb: 3 }}>
                       {recommendation.message}
                     </Typography>
-                    <Card sx={{ 
+                    <Box sx={{ 
                       maxWidth: 345,
                       mx: 'auto',
-                      boxShadow: 3,
                       '&:hover': {
                         transform: 'translateY(-5px)',
                         transition: 'transform 0.3s ease'
                       }
                     }}>
-                      <CardMedia
-                        component="img"
-                        image={`https://image.tmdb.org/t/p/w500${recommendation.movies[0].poster_path}`}
-                        alt={recommendation.movies[0].title}
-                        sx={{ height: 400, objectFit: 'cover' }}
+                      <MovieCard
+                        image={recommendation.movies[0].poster_url}
+                        title={recommendation.movies[0].title}
+                        genres={recommendation.movies[0].genre}
+                        contentId={recommendation.movies[0].content_id}
+                        rating={recommendation.movies[0].avg_rating?.toFixed(1) || 'N/A'}
+                        sx={{ 
+                          boxShadow: 3,
+                          '& .MuiCardMedia-root': {
+                            height: 400
+                          }
+                        }}
                       />
-                      <CardContent>
-                        <Typography gutterBottom variant="h5" component="div">
-                          {recommendation.movies[0].title}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          ⭐ {recommendation.movies[0].avg_rating?.toFixed(1) || 'N/A'}/10
-                        </Typography>
-                        {recommendation.type === 'overlap' && (
+                      {recommendation.type === 'overlap' && (
+                        <Box sx={{ mt: 2 }}>
                           <Chip 
                             label={`${recommendation.movies[0].overlap} of ${selectedFriends.length + 1} liked`}
                             color="primary"
-                            sx={{ mt: 1 }}
                           />
-                        )}
-                      </CardContent>
-                    </Card>
+                        </Box>
+                      )}
+                    </Box>
                   </>
                 ) : null}
               </Box>

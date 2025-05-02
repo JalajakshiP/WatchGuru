@@ -116,6 +116,9 @@ function Dashboard() {
                     genres={movie.genre}
                     contentId={movie.content_id}
                     rating={movie.rating || movie.score}
+                    liked={movie.liked}
+                    inWatchlist={movie.inwatchlist}
+                    history={movie.history}
                     type={section.type}
                   />
                 </Grid>
@@ -139,6 +142,9 @@ function Dashboard() {
                     contentId={movie.content_id}
                     rating={movie.rating || movie.score}
                     type="explore"
+                    liked={movie.liked}
+                    inWatchlist={movie.inwatchlist}
+                    history={movie.history}
                   />
 
 

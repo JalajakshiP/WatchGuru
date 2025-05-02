@@ -6,7 +6,6 @@ const cors = require("cors");
 const { Pool } = require("pg");
 // const { error } = require("ajv/dist/vocabularies/applicator/dependencies");
 const app = express();
-
 const math = require("mathjs");
 // const schedule = require("node-schedule");
 
@@ -18,7 +17,7 @@ const pool = new Pool({
   user: 'postgres',
   host: 'localhost',
   database: 'watchguru',
-  password: '12345678',
+  password: 'chocolate',
   port: 5432,
 });
 
@@ -484,11 +483,24 @@ app.get("/recommendations", isAuthenticated, async (req, res) => {
 
     // Query for exploreMore (everything else from the content table)
     const { rows: exploreMore } = await pool.query(
-      `SELECT content_id, title, poster_url, genre
+      `SELECT content_id, title, poster_url, genre ,EXISTS (
+    SELECT 1 
+    FROM likes 
+    WHERE user_id = $1 AND content_id = content.content_id
+  ) AS liked, EXISTS (
+    SELECT 1 
+    FROM watchlist 
+    WHERE user_id = $1 AND content_id = content.content_id
+  ) AS inwatchlist,
+   EXISTS (
+    SELECT 1 
+    FROM watch_history 
+    WHERE user_id = $1 AND content_id = content.content_id
+  ) AS watched
        FROM content
-       WHERE content_id <> ALL ($1::int[])
+       WHERE content_id <> ALL ($2::int[])
        `, // Optional: adjust limit or remove for full list
-      [Array.from(recommendedIds)]
+      [userId,Array.from(recommendedIds)]
     );
 
     res.json({
@@ -654,7 +666,21 @@ async function getContentBasedRecs(userId) {
   c.poster_url,
   c.genre,
   'content' as type,
-  1.0 as score
+  1.0 as score,
+   EXISTS (
+    SELECT 1 
+    FROM likes 
+    WHERE user_id = $1 AND content_id = c.content_id
+  ) AS liked, EXISTS (
+    SELECT 1 
+    FROM watchlist 
+    WHERE user_id = $1 AND content_id = c.content_id
+  ) AS inwatchlist,
+   EXISTS (
+    SELECT 1 
+    FROM watch_history 
+    WHERE user_id = $1 AND content_id = c.content_id
+  ) AS watched
 FROM content c
 JOIN users u ON c.genre && u.favorite_genres
 WHERE u.user_id = $1
@@ -678,7 +704,20 @@ async function getItemBasedCFRecs(userId) {
        LIMIT 5
      )
      SELECT c.content_id, c.title, c.poster_url, c.genre,
-       'item_cf' as type, AVG(ms.similarity) as score
+       'item_cf' as type, AVG(ms.similarity) as score, EXISTS (
+    SELECT 1 
+    FROM likes 
+    WHERE user_id = $1 AND content_id = c.content_id
+  ) AS liked, EXISTS (
+    SELECT 1 
+    FROM watchlist 
+    WHERE user_id = $1 AND content_id = c.content_id
+  ) AS inwatchlist,
+   EXISTS (
+    SELECT 1 
+    FROM watch_history 
+    WHERE user_id = $1 AND content_id = c.content_id
+  ) AS watched
      FROM movie_similarity ms
      JOIN content c ON ms.movie_id2 = c.content_id
      WHERE ms.movie_id1 IN (SELECT content_id FROM user_highly_rated)
@@ -703,6 +742,20 @@ async function getUserBasedCFRecs(userId) {
      SELECT 
        c.content_id, c.title, c.poster_url, c.genre,
        'user_cf' as type, AVG(r.rating) as score
+      , EXISTS (
+    SELECT 1 
+    FROM likes 
+    WHERE user_id = $1 AND content_id = c.content_id
+  ) AS liked, EXISTS (
+    SELECT 1 
+    FROM watchlist 
+    WHERE user_id = $1 AND content_id = c.content_id
+  ) AS inwatchlist,
+   EXISTS (
+    SELECT 1 
+    FROM watch_history 
+    WHERE user_id = $1 AND content_id = c.content_id
+  ) AS watched
      FROM reviews r
      JOIN content c ON r.content_id = c.content_id
      WHERE r.user_id IN (SELECT user_id FROM similar_users)
@@ -728,6 +781,20 @@ async function getSVDRecs(userId) {
            c.poster_url, 
            c.genre,
            it.factors
+           ,EXISTS (
+    SELECT 1 
+    FROM likes 
+    WHERE user_id = $1 AND content_id = c.content_id
+  ) AS liked, EXISTS (
+    SELECT 1 
+    FROM watchlist 
+    WHERE user_id = $1 AND content_id = c.content_id
+  ) AS inwatchlist,
+   EXISTS (
+    SELECT 1 
+    FROM watch_history 
+    WHERE user_id = $1 AND content_id = c.content_id
+  ) AS watched
          FROM svd_item_factors it
          JOIN content c ON it.content_id = c.content_id
          WHERE it.content_id NOT IN (
@@ -766,14 +833,28 @@ async function getPopularRecs() {
   c.poster_url, 
   c.genre,
   'top_rated' AS type,
-  AVG(r.rating) AS avg_rating
+  AVG(r.rating) AS avg_rating,
+  EXISTS (
+    SELECT 1 
+    FROM likes 
+    WHERE user_id = $1 AND content_id = c.content_id
+  ) AS liked, EXISTS (
+    SELECT 1 
+    FROM watchlist 
+    WHERE user_id = $1 AND content_id = c.content_id
+  ) AS inwatchlist,
+   EXISTS (
+    SELECT 1 
+    FROM watch_history 
+    WHERE user_id = $1 AND content_id = c.content_id
+  ) AS watched
 FROM content c
 JOIN reviews r ON c.content_id = r.content_id
 GROUP BY c.content_id, c.title, c.poster_url, c.genre
 HAVING AVG(r.rating) > 0
 ORDER BY avg_rating DESC
 LIMIT 10;
-`
+`,[userId]
     );
     return rows;
   } catch (error) {
@@ -804,10 +885,24 @@ app.get("/recommendmovies", isAuthenticated, async (req, res) => {
     const userGenres = userGenresResult.rows[0].favorite_genres;
 
     const recommendationsResult = await pool.query(
-      `SELECT DISTINCT ON (title) content_id, title, poster_url, genre 
+      `SELECT DISTINCT ON (title) content_id, title, poster_url, genre ,
+      EXISTS (
+    SELECT 1 
+    FROM likes 
+    WHERE user_id = $2 AND content_id = content.content_id
+  ) AS liked, EXISTS (
+    SELECT 1 
+    FROM watchlist 
+    WHERE user_id = $2 AND content_id = content.content_id
+  ) AS inwatchlist,
+   EXISTS (
+    SELECT 1 
+    FROM watch_history 
+    WHERE user_id = $2 AND content_id = content.content_id
+  ) AS watched
        FROM content 
        WHERE content_type = 'movie' AND genre && $1::text[]`,
-      [userGenres]
+      [userGenres,userId]
     );
 
     const recommendedMovies = recommendationsResult.rows;
@@ -817,10 +912,24 @@ app.get("/recommendmovies", isAuthenticated, async (req, res) => {
     if (recommendedIds.length > 0) {
 
       othersResult = await pool.query(
-        `SELECT DISTINCT ON (title) content_id, title, poster_url, genre
+        `SELECT DISTINCT ON (title) content_id, title, poster_url, genre,
+        EXISTS (
+    SELECT 1 
+    FROM likes 
+    WHERE user_id = $2 AND content_id = content.content_id
+  ) AS liked, EXISTS (
+    SELECT 1 
+    FROM watchlist 
+    WHERE user_id = $2 AND content_id = content.content_id
+  ) AS inwatchlist,
+   EXISTS (
+    SELECT 1 
+    FROM watch_history 
+    WHERE user_id = $2 AND content_id = content.content_id
+  ) AS watched
          FROM content
          WHERE content_type = 'movie' AND content_id != ALL($1::int[])`,
-        [recommendedIds]
+        [recommendedIds,userId]
       );
     } else {
       // If no recommended IDs, just fetch all movies
@@ -857,10 +966,24 @@ app.get("/recommendanimes", isAuthenticated, async (req, res) => {
     const userGenres = userGenresResult.rows[0].favorite_genres;
 
     const recommendationsResult = await pool.query(
-      `SELECT DISTINCT ON (title) content_id, title, poster_url, genre 
+      `SELECT DISTINCT ON (title) content_id, title, poster_url, genre ,
+      EXISTS (
+    SELECT 1 
+    FROM likes 
+    WHERE user_id = $2 AND content_id = content.content_id
+  ) AS liked, EXISTS (
+    SELECT 1 
+    FROM watchlist 
+    WHERE user_id = $2 AND content_id = content.content_id
+  ) AS inwatchlist,
+   EXISTS (
+    SELECT 1 
+    FROM watch_history 
+    WHERE user_id = $2 AND content_id = content.content_id
+  ) AS watched
        FROM content 
        WHERE content_type = 'anime' AND genre && $1::text[]`,
-      [userGenres]
+      [userGenres,userId]
     );
 
     const recommendedAnimes = recommendationsResult.rows;
@@ -870,16 +993,44 @@ app.get("/recommendanimes", isAuthenticated, async (req, res) => {
     if (recommendedIds.length > 0) {
 
       othersResult = await pool.query(
-        `SELECT DISTINCT ON (title) content_id, title, poster_url, genre
+        `SELECT DISTINCT ON (title) content_id, title, poster_url, genre,
+        EXISTS (
+    SELECT 1 
+    FROM likes 
+    WHERE user_id = $2 AND content_id = content.content_id
+  ) AS liked, EXISTS (
+    SELECT 1 
+    FROM watchlist 
+    WHERE user_id = $2 AND content_id = content.content_id
+  ) AS inwatchlist,
+   EXISTS (
+    SELECT 1 
+    FROM watch_history 
+    WHERE user_id = $2 AND content_id = content.content_id
+  ) AS watched
          FROM content
          WHERE content_type = 'anime' AND content_id != ALL($1::int[])`,
-        [recommendedIds]
+        [recommendedIds,userId]
       );
     } else {
       // If no recommended IDs, just fetch all movies
       othersResult = await pool.query(
-        `SELECT DISTINCT ON (title) content_id, title, poster_url, genre 
-        FROM content WHERE content_type = 'anime'`
+        `SELECT DISTINCT ON (title) content_id, title, poster_url, genre,
+        EXISTS (
+    SELECT 1 
+    FROM likes 
+    WHERE user_id = $1 AND content_id = content.content_id
+  ) AS liked, EXISTS (
+    SELECT 1 
+    FROM watchlist 
+    WHERE user_id = $1 AND content_id = content.content_id
+  ) AS inwatchlist,
+   EXISTS (
+    SELECT 1 
+    FROM watch_history 
+    WHERE user_id = $1 AND content_id = content.content_id
+  ) AS watched
+        FROM content WHERE content_type = 'anime'`,[userId]
       );
     }
     const otherAnimes = othersResult.rows;
@@ -910,10 +1061,24 @@ app.get("/recommendshows", isAuthenticated, async (req, res) => {
     const userGenres = userGenresResult.rows[0].favorite_genres;
 
     const recommendationsResult = await pool.query(
-      `SELECT DISTINCT ON (title) content_id, title, poster_url, genre 
+      `SELECT DISTINCT ON (title) content_id, title, poster_url, genre,
+      EXISTS (
+    SELECT 1 
+    FROM likes 
+    WHERE user_id = $2 AND content_id = content.content_id
+  ) AS liked, EXISTS (
+    SELECT 1 
+    FROM watchlist 
+    WHERE user_id = $2 AND content_id = content.content_id
+  ) AS inwatchlist,
+   EXISTS (
+    SELECT 1 
+    FROM watch_history 
+    WHERE user_id = $2 AND content_id = content.content_id
+  ) AS watched
        FROM content 
        WHERE content_type = 'show' AND genre && $1::text[]`,
-      [userGenres]
+      [userGenres,userId]
     );
 
     const recommendedShows = recommendationsResult.rows;
@@ -923,16 +1088,44 @@ app.get("/recommendshows", isAuthenticated, async (req, res) => {
     if (recommendedIds.length > 0) {
 
       othersResult = await pool.query(
-        `SELECT DISTINCT ON (title) content_id, title, poster_url, genre
+        `SELECT DISTINCT ON (title) content_id, title, poster_url, genre,
+        EXISTS (
+    SELECT 1 
+    FROM likes 
+    WHERE user_id = $2 AND content_id = content.content_id
+  ) AS liked, EXISTS (
+    SELECT 1 
+    FROM watchlist 
+    WHERE user_id = $2 AND content_id = content.content_id
+  ) AS inwatchlist,
+   EXISTS (
+    SELECT 1 
+    FROM watch_history 
+    WHERE user_id = $2 AND content_id = content.content_id
+  ) AS watched
          FROM content
          WHERE content_type = 'show' AND content_id != ALL($1::int[])`,
-        [recommendedIds]
+        [recommendedIds,userId]
       );
     } else {
       // If no recommended IDs, just fetch all movies
       othersResult = await pool.query(
-        `SELECT DISTINCT ON (title) content_id, title, poster_url, genre 
-        FROM content WHERE content_type = 'show'`
+        `SELECT DISTINCT ON (title) content_id, title, poster_url, genre,
+         EXISTS (
+    SELECT 1 
+    FROM likes 
+    WHERE user_id = $1 AND content_id = c.content_id
+  ) AS liked, EXISTS (
+    SELECT 1 
+    FROM watchlist 
+    WHERE user_id = $1 AND content_id = c.content_id
+  ) AS inwatchlist,
+   EXISTS (
+    SELECT 1 
+    FROM watch_history 
+    WHERE user_id = $1 AND content_id = c.content_id
+  ) AS watched
+        FROM content WHERE content_type = 'show'`,[userId]
       );
     }
     const otherMovies = othersResult.rows;
@@ -1574,5 +1767,176 @@ app.get("/collab-recommendations", isAuthenticated, async (req, res) => {
   } catch (error) {
     console.error("Error fetching collaborative recommendations:", error);
     res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+//likes, watchlist and history
+// ---------- Likes ----------
+app.post("/likes", async (req, res) => {
+  const { contentId } = req.body;
+  console.log("contentId",contentId);
+  const userId = req.session.userId
+  console.log("userId",userId);
+  if (!userId || !contentId) return res.status(400).json({ error: "Missing user or content ID" });
+
+  try {
+    const existing = await pool.query(
+      "SELECT * FROM likes WHERE user_id = $1 AND content_id = $2",
+      [userId, contentId]
+    );
+
+    if (existing.rows.length > 0) {
+      await pool.query("DELETE FROM likes WHERE user_id = $1 AND content_id = $2", [userId, contentId]);
+      console.log("unliked",contentId);
+      return res.json({ liked: false });
+    } else {
+      await pool.query("INSERT INTO likes (user_id, content_id) VALUES ($1, $2)", [userId, contentId]);
+      console.log("liked",contentId);
+      return res.json({ liked: true });
+    }
+  } catch (err) {
+    console.error("Error handling likes:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+app.get("/likes", async (req, res) => {
+  const userId = req.session.userId;
+  if (!userId) return res.status(401).json({ error: "Unauthorized" });
+
+  try {
+    const { rows } = await pool.query(
+      `SELECT content.*,TRUE AS liked,
+      EXISTS (
+    SELECT 1 
+    FROM watchlist 
+    WHERE user_id = $1 AND content_id = likes.content_id
+  ) AS inwatchlist
+   ,
+   EXISTS (
+    SELECT 1 
+    FROM watch_history 
+    WHERE user_id = $1 AND content_id = likes.content_id
+  ) AS watched FROM likes JOIN content ON likes.content_id = content.content_id WHERE likes.user_id = $1`,
+      [userId]
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error("Error fetching liked content:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+
+// ---------- Watchlist ----------
+app.post("/watchlist", async (req, res) => {
+  const { contentId } = req.body;
+  const userId = req.session.userId;
+
+  if (!userId || !contentId) return res.status(400).json({ error: "Missing user or content ID" });
+
+  try {
+    const existing = await pool.query(
+      "SELECT * FROM watchlist WHERE user_id = $1 AND content_id = $2",
+      [userId, contentId]
+    );
+
+    if (existing.rows.length > 0) {
+      await pool.query("DELETE FROM watchlist WHERE user_id = $1 AND content_id = $2", [userId, contentId]);
+      return res.json({ inWatchlist: false });
+    } else {
+      await pool.query("INSERT INTO watchlist (user_id, content_id) VALUES ($1, $2)", [userId, contentId]);
+      return res.json({ inWatchlist: true });
+    }
+  } catch (err) {
+    console.error("Error handling watchlist:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+app.get("/watchlist", async (req, res) => {
+  const userId = req.session.userId;
+  if (!userId) return res.status(401).json({ error: "Unauthorized" });
+
+  try {
+    const { rows } = await pool.query(
+      `SELECT content.*,EXISTS (
+    SELECT 1 
+    FROM likes 
+    WHERE user_id = $1 AND content_id = watchlist.content_id
+  ) AS liked,
+      TRUE AS inwatchlist,
+   EXISTS (
+    SELECT 1 
+    FROM watch_history 
+    WHERE user_id = $1 AND content_id = watchlist.content_id
+  ) AS watched FROM watchlist JOIN content ON watchlist.content_id = content.content_id WHERE watchlist.user_id = $1`,
+      [userId]
+    );
+    
+    res.json(rows);
+  } catch (err) {
+    console.error("Error fetching watchlist:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+
+// ---------- Watch History ----------
+app.post("/history", async (req, res) => {
+  const { contentId } = req.body;
+  const userId = req.session.userId;
+
+  if (!userId || !contentId) return res.status(400).json({ error: "Missing user or content ID" });
+
+  try {
+    const existing = await pool.query(
+      "SELECT * FROM watch_history WHERE user_id = $1 AND content_id = $2",
+      [userId, contentId]
+    );
+    if (existing.rows.length > 0) {
+      await pool.query("DELETE FROM watch_history WHERE user_id = $1 AND content_id = $2", [userId, contentId]);
+      console.log("unwatched",contentId);
+      return res.json({ watched: false });
+    }
+    else{
+    await pool.query(
+      `INSERT INTO watch_history (user_id, content_id, watched_at)
+       VALUES ($1, $2, NOW())
+       ON CONFLICT (user_id, content_id) DO UPDATE SET watched_at = NOW()`,
+      [userId, contentId]
+    );
+    await pool.query("DELETE FROM watchlist WHERE user_id = $1 AND content_id = $2", [userId, contentId]);
+    res.json({ watched: true });}
+  } catch (err) {
+    console.error("Error adding to watch history:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+app.get("/history", async (req, res) => {
+  const userId = req.session.userId;
+  if (!userId) return res.status(401).json({ error: "Unauthorized" });
+
+  try {
+    const { rows } = await pool.query(
+      `SELECT content.*, wh.watched_at,
+      EXISTS (
+    SELECT 1 
+    FROM likes 
+    WHERE user_id = $1 AND content_id = content.content_id
+  ) AS liked, EXISTS (
+    SELECT 1 
+    FROM watchlist 
+    WHERE user_id = $1 AND content_id = content.content_id
+  ) AS inwatchlist ,
+   TRUE AS watched
+       FROM watch_history wh JOIN content ON wh.content_id = content.content_id WHERE wh.user_id = $1 ORDER BY wh.watched_at DESC`,
+      [userId]
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error("Error fetching watch history:", err);
+    res.status(500).json({ error: "Internal server error" });
   }
 });

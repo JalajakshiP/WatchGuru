@@ -128,7 +128,8 @@ function DashboardNavbar({ absolute, light, isMini, setSearchQuery }) {
     });
     handleCloseMenu();
     if (notif.type === "message") {
-      window.location.href = `/messages?friendId=${notif.from_user}`;
+      window.location.href = `/chats`;
+      // messages?friendId=${notif.from_user}`;
     } else if (notif.type === "friend_request" || notif.type === "friend_accept") {
       window.location.href = `/friends`;
     }

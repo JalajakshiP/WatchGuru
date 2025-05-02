@@ -55,6 +55,9 @@ function AnimeList() {
                 title={movie.title}
                 genres={movie.genre}
                 contentId={movie.content_id}
+                liked={movie.liked}
+                watched={movie.watched}
+                inWatchlist={movie.inwatchlist}
               />
             </Grid>
           ))}
@@ -75,7 +78,9 @@ function AnimeList() {
                 title={movie.title}
                 genres={movie.genre}
                 contentId={movie.content_id}
-
+                liked={movie.liked}
+                watched={movie.watched}
+                inWatchlist={movie.inwatchlist}
               />
             </Grid>
           ))}
