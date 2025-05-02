@@ -16,7 +16,8 @@ import UpdateProfile from "layouts/profile/components/Update";
 import MovieDetails from  "layouts/moviedetails";
 // Argon Dashboard 2 MUI components
 import ArgonBox from "components/ArgonBox";
-import ProtectedRoute from "layouts/authentication/components/ProtectedRoute/ProtectedRoutes"; // 👈 added here
+import ProtectedRoute from "layouts/authentication/components/ProtectedRoute/ProtectedRoutes";
+import GroupRecommendation from "layouts/group-recommendation";
 
 const routes = [
   {
@@ -197,6 +198,20 @@ const routes = [
     icon: <ArgonBox component="i" color="info" fontSize="14px" className="ni ni-button-power" />,
     layout: "main",
   },
+  {
+    type: "route",
+    name: "GroupRecommendation",
+    key: "group-recommendation",
+    route: "/group-recommendation",
+    icon: <ArgonBox component="i" color="info" fontSize="14px" className="ni ni-spaceship" />,
+    component: (
+      <ProtectedRoute>
+        <GroupRecommendation />
+      </ProtectedRoute>
+    ),
+    layout: "dashboard",
+  },
+
 ];
 
 export default routes;

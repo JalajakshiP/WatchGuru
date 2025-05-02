@@ -6,6 +6,10 @@ const cors = require("cors");
 const { Pool } = require("pg");
 // const { error } = require("ajv/dist/vocabularies/applicator/dependencies");
 const app = express();
+
+const math = require("mathjs");
+// const schedule = require("node-schedule");
+
 const port = 4000;
 
 // PostgreSQL connection
@@ -49,6 +53,7 @@ function isAuthenticated(req, res, next) {
   req.session.userId ? next() : res.status(400).json({ message: "Unauthorized" });
 
 }
+
 
 console.log("Starting backend...");
 app.get("/", (req, res) => {
@@ -156,34 +161,631 @@ app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
 });
 
+// app.get("/recommendations", isAuthenticated, async (req, res) => {
+//   try {
+//     const userId = req.session.userId;
+
+//     // Fetch the user's favorite genres
+//     const userGenresResult = await pool.query(
+//       "SELECT favorite_genres FROM users WHERE user_id = $1",
+//       [userId]
+//     );
+
+//     if (userGenresResult.rows.length === 0) {
+//       return res.status(404).json({ message: "User not found" });
+//     }
+
+//     const userGenres = userGenresResult.rows[0].favorite_genres;
+
+//     // Fetch movie recommendations based on the user's favorite genres
+//     const recommendationsResult = await pool.query(
+//       `SELECT DISTINCT ON (title) content_id, title, poster_url, genre FROM content WHERE genre && $1::text[]`,
+//       [userGenres]
+//     );
+
+//     res.status(200).json({data: recommendationsResult.rows});
+//   } catch (error) {
+//     console.error("Error fetching recommendations:", error);
+//     res.status(500).json({ message: "Internal server error" });
+//   }
+// });
+
+// 1. SVD-Based Collaborative Filtering
+async function trainSVDFiltering() {
+  try {
+    console.log("Starting SVD training...");
+    
+    // Get all ratings
+    const { rows: ratings } = await pool.query(
+      "SELECT user_id, content_id, rating FROM reviews"
+    );
+
+    if (ratings.length < 100) {
+      console.log("Not enough ratings for SVD (minimum 100 required)");
+      return;
+    }
+
+    // Create mappings
+    const users = [...new Set(ratings.map(r => r.user_id))];
+    const items = [...new Set(ratings.map(r => r.content_id))];
+    
+    const userIndex = {};
+    const itemIndex = {};
+    users.forEach((user, idx) => userIndex[user] = idx);
+    items.forEach((item, idx) => itemIndex[item] = idx);
+
+    // Create dense matrix (fill missing with 0)
+    const matrix = math.zeros(users.length, items.length);
+    ratings.forEach(r => {
+      matrix.set([userIndex[r.user_id], itemIndex[r.content_id]], r.rating);
+    });
+
+    // Compute SVD
+    console.log("Computing SVD...");
+    const { U, S, V } = math.svd(matrix);
+    
+    // Truncate to 10 latent factors
+    const k = 10;
+    const U_k = U.map(row => row.slice(0, k));
+    const S_k = math.diag(S.slice(0, k));
+    const V_k = V.map(row => row.slice(0, k));
+
+    // Compute reduced matrices
+    const userFactors = math.multiply(U_k, S_k);
+    const itemFactors = math.multiply(math.transpose(V_k), S_k);
+
+    // Store in database
+    await pool.query("TRUNCATE svd_user_factors");
+    await pool.query("TRUNCATE svd_item_factors");
+
+    // Batch insert user factors
+    const userBatches = [];
+    users.forEach((userId, i) => {
+      userBatches.push({
+        userId,
+        factors: userFactors[i]
+      });
+    });
+    
+    // Batch insert item factors
+    const itemBatches = [];
+    items.forEach((itemId, i) => {
+      itemBatches.push({
+        itemId,
+        factors: itemFactors[i]
+      });
+    });
+
+    // Execute in parallel
+    await Promise.all([
+      pool.query(
+        "INSERT INTO svd_user_factors (user_id, factors) VALUES " +
+        userBatches.map(b => `(${b.userId}, ARRAY[${b.factors.join(',')}])`).join(',')
+      ),
+      pool.query(
+        "INSERT INTO svd_item_factors (content_id, factors) VALUES " +
+        itemBatches.map(b => `(${b.itemId}, ARRAY[${b.factors.join(',')}])`).join(',')
+      )
+    ]);
+
+    console.log("SVD training completed successfully");
+  } catch (error) {
+    console.error("Error in SVD training:", error);
+  }
+}
+
+// 2. Item-Based Collaborative Filtering
+async function trainItemBasedCF() {
+  try {
+    console.log("Training item-based CF...");
+    const { rows: ratings } = await pool.query(
+      "SELECT user_id, content_id, rating FROM reviews"
+    );
+
+    // Create user-item and item-user matrices
+    const userItemMatrix = {};
+    const itemUsers = {};
+
+    ratings.forEach(r => {
+      userItemMatrix[r.user_id] = userItemMatrix[r.user_id] || {};
+      userItemMatrix[r.user_id][r.content_id] = r.rating;
+      
+      itemUsers[r.content_id] = itemUsers[r.content_id] || [];
+      itemUsers[r.content_id].push(r.user_id);
+    });
+
+    const items = Object.keys(itemUsers);
+    await pool.query("TRUNCATE movie_similarity");
+
+    // Process in batches for memory efficiency
+    const batchSize = 50;
+    for (let i = 0; i < items.length; i += batchSize) {
+      const batch = items.slice(i, i + batchSize);
+      const inserts = [];
+      
+      for (const item1 of batch) {
+        for (const item2 of items) {
+          if (item1 === item2) continue;
+          
+          const commonUsers = itemUsers[item1].filter(u => itemUsers[item2].includes(u));
+          if (commonUsers.length < 3) continue;
+          
+          // Cosine similarity
+          let dot = 0, mag1 = 0, mag2 = 0;
+          commonUsers.forEach(u => {
+            const r1 = userItemMatrix[u][item1];
+            const r2 = userItemMatrix[u][item2];
+            dot += r1 * r2;
+            mag1 += r1 * r1;
+            mag2 += r2 * r2;
+          });
+          
+          const sim = dot / (Math.sqrt(mag1) * Math.sqrt(mag2));
+          if (sim > 0.2) {
+            inserts.push(`(${item1}, ${item2}, ${sim})`);
+          }
+        }
+      }
+      
+      if (inserts.length > 0) {
+        await pool.query(
+          `INSERT INTO movie_similarity (movie_id1, movie_id2, similarity) VALUES ${inserts.join(',')}`
+        );
+      }
+    }
+    
+    console.log("Item-based CF training completed");
+  } catch (error) {
+    console.error("Error in item-based CF training:", error);
+  }
+}
+
+// 3. User-Based Collaborative Filtering
+async function trainUserBasedCF() {
+  try {
+    console.log("Training user-based CF...");
+    const { rows: ratings } = await pool.query(
+      "SELECT user_id, content_id, rating FROM reviews"
+    );
+
+    // Create user-item and user-user matrices
+    const userItems = {};
+    const itemUsers = {};
+    
+    ratings.forEach(r => {
+      userItems[r.user_id] = userItems[r.user_id] || [];
+      userItems[r.user_id].push(r.content_id);
+      
+      itemUsers[r.content_id] = itemUsers[r.content_id] || [];
+      itemUsers[r.content_id].push(r.user_id);
+    });
+
+    const users = Object.keys(userItems);
+    await pool.query("TRUNCATE user_similarity");
+
+    // Process in batches
+    const batchSize = 50;
+    for (let i = 0; i < users.length; i += batchSize) {
+      const batch = users.slice(i, i + batchSize);
+      const inserts = [];
+      
+      for (const user1 of batch) {
+        for (const user2 of users) {
+          if (user1 === user2) continue;
+          
+          const commonItems = userItems[user1].filter(i => userItems[user2].includes(i));
+          if (commonItems.length < 3) continue;
+          
+          // Cosine similarity
+          let dot = 0, mag1 = 0, mag2 = 0;
+          commonItems.forEach(i => {
+            const r1 = ratings.find(r => r.user_id == user1 && r.content_id == i)?.rating || 0;
+            const r2 = ratings.find(r => r.user_id == user2 && r.content_id == i)?.rating || 0;
+            dot += r1 * r2;
+            mag1 += r1 * r1;
+            mag2 += r2 * r2;
+          });
+          
+          const sim = dot / (Math.sqrt(mag1) * Math.sqrt(mag2));
+          if (sim > 0.2) {
+            inserts.push(`(${user1}, ${user2}, ${sim})`);
+          }
+        }
+      }
+      
+    if (inserts.length > 0) {
+        await pool.query(
+          `INSERT INTO user_similarity (user_id1, user_id2, similarity) VALUES ${inserts.join(',')}`
+        );
+      }
+    }
+    
+    console.log("User-based CF training completed");
+  } catch (error) {
+    console.error("Error in user-based CF training:", error);
+  }
+}
+
+// Training scheduler
+async function trainAllModels() {
+  console.log("\n=== Starting model training ===");
+  await Promise.all([
+    trainSVDFiltering(),
+    trainItemBasedCF(),
+    trainUserBasedCF()
+  ]);
+  console.log("=== Model training completed ===\n");
+}
+
+// Schedule training every 10 minutes
+setInterval(trainAllModels, 10 * 60 * 1000);
+trainAllModels(); // Initial training
+
+
 app.get("/recommendations", isAuthenticated, async (req, res) => {
   try {
     const userId = req.session.userId;
 
-    // Fetch the user's favorite genres
-    const userGenresResult = await pool.query(
-      "SELECT favorite_genres FROM users WHERE user_id = $1",
-      [userId]
+    // Get all recommendation types
+    const [contentBased, itemCF, userCF, svdBased, popular] = await Promise.all([
+      getContentBasedRecs(userId),
+      getItemBasedCFRecs(userId),
+      getUserBasedCFRecs(userId),
+      getSVDRecs(userId),
+      getPopularRecs()
+    ]);
+
+    // Process each recommendation type
+    const processSection = (recs, type) => {
+      const seen = new Set();
+      return recs
+        .filter(rec => {
+          if (seen.has(rec.content_id)) return false;
+          seen.add(rec.content_id);
+          return true;
+        })
+        .map(rec => ({ ...rec, recommendationType: type }))
+        .slice(0, 10); // Limit to 10 per section
+    };
+
+    const sections = [
+      {
+        title: "Popular Right Now",
+        type: "popular",
+        movies: processSection(popular, 'popular')
+      },
+      {
+        title: "Based on Your Favorite Genres",
+        type: "genre",
+        movies: processSection(contentBased, 'genre')
+      },
+      {
+        title: "Similar to Your Taste",
+        type: "user",
+        movies: processSection(userCF, 'user')
+      },
+      {
+        title: "Because You Liked Similar Content",
+        type: "item",
+        movies: processSection(itemCF, 'item')
+      },
+      {
+        title: "Our Special Picks For You",
+        type: "svd",
+        movies: processSection(svdBased, 'svd')
+      }
+    ];
+
+    // Collect all content_ids that are already recommended
+    const recommendedIds = new Set();
+    sections.forEach(section => {
+      section.movies.forEach(movie => recommendedIds.add(movie.content_id));
+    });
+
+    // Query for exploreMore (everything else from the content table)
+    const { rows: exploreMore } = await pool.query(
+      `SELECT content_id, title, poster_url, genre
+       FROM content
+       WHERE content_id <> ALL ($1::int[])
+       `, // Optional: adjust limit or remove for full list
+      [Array.from(recommendedIds)]
     );
 
-    if (userGenresResult.rows.length === 0) {
-      return res.status(404).json({ message: "User not found" });
-    }
+    res.json({
+      sections,
+      exploreMore
+    });
 
-    const userGenres = userGenresResult.rows[0].favorite_genres;
-
-    // Fetch movie recommendations based on the user's favorite genres
-    const recommendationsResult = await pool.query(
-      `SELECT DISTINCT ON (title) content_id, title, poster_url, genre FROM content WHERE genre && $1::text[]`,
-      [userGenres]
-    );
-
-    res.status(200).json({data: recommendationsResult.rows});
   } catch (error) {
-    console.error("Error fetching recommendations:", error);
-    res.status(500).json({ message: "Internal server error" });
+    console.error("Recommendation error:", error);
+    res.status(500).json({
+      message: "Error generating recommendations",
+      error: process.env.NODE_ENV === 'development' ? error.message : null
+    });
   }
 });
+app.post("/group-recommendations", isAuthenticated, async (req, res) => {
+  try {
+    const { friendIds, exclude = [] } = req.body; // Add exclude parameter
+    const userId = req.session.userId;
+    const allUserIds = [userId, ...friendIds];
+
+    // 1. Get recommendations for all group members
+    const allRecommendations = await Promise.all(
+      allUserIds.map(userId => getCombinedRecommendations(userId))
+    );
+
+    // 2. Find intersection of all recommendations
+    let commonRecommendations = findCommonRecommendations(allRecommendations)
+      .filter(movie => !exclude.includes(movie.content_id));
+
+    // 3. If no common recommendations, find content with highest overlap
+    if (commonRecommendations.length === 0) {
+      const overlapRecommendations = findRecommendationOverlap(allRecommendations)
+        .filter(movie => !exclude.includes(movie.content_id));
+      
+      if (overlapRecommendations.length > 0) {
+        return res.json({
+          type: 'overlap',
+          message: `These movies were liked by ${overlapRecommendations[0].overlap} of ${allUserIds.length} members`,
+          movies: [overlapRecommendations[0]] // Return just the top one
+        });
+      }
+    }
+
+    // 4. If still nothing, get one popular movie not in exclude list
+    if (commonRecommendations.length === 0) {
+      const popular = await getPopularRecs();
+      const availablePopular = popular.filter(movie => 
+        !exclude.includes(movie.content_id)
+      );
+      
+      if (availablePopular.length > 0) {
+        return res.json({
+          type: 'popular',
+          message: 'No common favorites found - here is a popular choice',
+          movies: [availablePopular[0]] // Return just one
+        });
+      }
+      
+      // 5. If absolutely nothing left
+      return res.json({
+        type: 'exhausted',
+        message: 'No more recommendations available for your group',
+        movies: []
+      });
+    }
+
+    // Return one common recommendation
+    res.json({
+      type: 'common',
+      message: 'This movie was recommended for all group members',
+      movies: [commonRecommendations[0]] // Return just one
+    });
+
+  } catch (error) {
+    console.error("Group recommendation error:", error);
+    res.status(500).json({
+      message: "Error generating group recommendations",
+      error: process.env.NODE_ENV === 'development' ? error.message : null
+    });
+  }
+});
+
+// Helper function to get combined recommendations for a single user
+async function getCombinedRecommendations(userId) {
+  const [contentBased, itemCF, userCF, svdBased, popular] = await Promise.all([
+    getContentBasedRecs(userId),
+    getItemBasedCFRecs(userId),
+    getUserBasedCFRecs(userId),
+    getSVDRecs(userId),
+    getPopularRecs()
+  ]);
+  
+  // Combine all recommendations and deduplicate
+  const allRecs = [...contentBased, ...itemCF, ...userCF, ...svdBased, ...popular];
+  const seen = new Set();
+  
+  return allRecs.filter(rec => {
+    if (seen.has(rec.content_id)) return false;
+    seen.add(rec.content_id);
+    return true;
+  });
+}
+
+// Find recommendations that appear in all users' lists
+function findCommonRecommendations(allRecommendations) {
+  if (allRecommendations.length === 0) return [];
+  
+  // Create a map of content_id to count
+  const recommendationCounts = new Map();
+  
+  allRecommendations.forEach(userRecs => {
+    const userRecsSet = new Set(userRecs.map(r => r.content_id));
+    userRecsSet.forEach(contentId => {
+      recommendationCounts.set(contentId, (recommendationCounts.get(contentId) || 0) + 1);
+    });
+  });
+  
+  // Filter for content recommended to all users
+  const commonRecs = [];
+  const totalUsers = allRecommendations.length;
+  
+  recommendationCounts.forEach((count, contentId) => {
+    if (count === totalUsers) {
+      // Find the first occurrence to get details
+      const rec = allRecommendations[0].find(r => r.content_id === contentId);
+      commonRecs.push(rec);
+    }
+  });
+  
+  return commonRecs;
+}
+
+// Find recommendations with highest overlap when no perfect matches exist
+function findRecommendationOverlap(allRecommendations) {
+  const recommendationCounts = new Map();
+  
+  allRecommendations.forEach(userRecs => {
+    userRecs.forEach(rec => {
+      recommendationCounts.set(rec.content_id, {
+        count: (recommendationCounts.get(rec.content_id)?.count || 0) + 1,
+        details: rec // Store the recommendation details
+      });
+    });
+  });
+  
+  // Convert to array and sort by overlap count
+  return Array.from(recommendationCounts.entries())
+    .map(([contentId, {count, details}]) => ({
+      ...details,
+      overlap: count,
+      overlapPercentage: Math.round((count / allRecommendations.length) * 100)
+    }))
+    .sort((a, b) => b.overlap - a.overlap);
+}
+
+// Helper functions for recommendations
+async function getContentBasedRecs(userId) {
+  const { rows } = await pool.query(
+    `SELECT DISTINCT ON (c.title)
+  c.content_id,
+  c.title,
+  c.poster_url,
+  c.genre,
+  'content' as type,
+  1.0 as score
+FROM content c
+JOIN users u ON c.genre && u.favorite_genres
+WHERE u.user_id = $1
+ORDER BY c.title, c.content_id -- Ensure we order by title and content_id for uniqueness
+LIMIT 20;
+
+
+`,
+
+    [userId]
+  );
+console.log(rows)
+  return rows;
+}
+
+async function getItemBasedCFRecs(userId) {
+  const { rows } = await pool.query(
+    `WITH user_highly_rated AS (
+       SELECT content_id FROM reviews 
+       WHERE user_id = $1 AND rating >= 7
+       LIMIT 5
+     )
+     SELECT c.content_id, c.title, c.poster_url, c.genre,
+       'item_cf' as type, AVG(ms.similarity) as score
+     FROM movie_similarity ms
+     JOIN content c ON ms.movie_id2 = c.content_id
+     WHERE ms.movie_id1 IN (SELECT content_id FROM user_highly_rated)
+     AND c.content_id NOT IN (SELECT content_id FROM reviews WHERE user_id = $1)
+     GROUP BY c.content_id, c.title, c.poster_url, c.genre
+     ORDER BY score DESC
+     LIMIT 20`,
+    [userId]
+  );
+  return rows;
+}
+
+async function getUserBasedCFRecs(userId) {
+  const { rows } = await pool.query(
+    `WITH similar_users AS (
+       SELECT user_id2 as user_id, similarity
+       FROM user_similarity
+       WHERE user_id1 = $1
+       ORDER BY similarity DESC
+       LIMIT 5
+     )
+     SELECT 
+       c.content_id, c.title, c.poster_url, c.genre,
+       'user_cf' as type, AVG(r.rating) as score
+     FROM reviews r
+     JOIN content c ON r.content_id = c.content_id
+     WHERE r.user_id IN (SELECT user_id FROM similar_users)
+     AND r.rating >= 7
+     AND r.content_id NOT IN (SELECT content_id FROM reviews WHERE user_id = $1)
+     GROUP BY c.content_id, c.title, c.poster_url, c.genre
+     ORDER BY score DESC, COUNT(*) DESC
+     LIMIT 20`,
+    [userId]
+  );
+  return rows;
+}
+async function getSVDRecs(userId) {
+  try {
+    const { rows } = await pool.query(
+      `WITH user_vec AS (
+         SELECT factors FROM svd_user_factors WHERE user_id = $1
+       ),
+       item_factors AS (
+         SELECT 
+           it.content_id, 
+           c.title, 
+           c.poster_url, 
+           c.genre,
+           it.factors
+         FROM svd_item_factors it
+         JOIN content c ON it.content_id = c.content_id
+         WHERE it.content_id NOT IN (
+           SELECT content_id FROM reviews WHERE user_id = $1
+         )
+       )
+       SELECT 
+         i.content_id,
+         i.title,
+         i.poster_url,
+         i.genre,
+         'svd' AS type,
+         (
+           SELECT SUM(u.factors[n] * i.factors[n])
+           FROM generate_series(1, array_length(u.factors, 1)) AS n
+         ) AS score
+       FROM item_factors i
+       CROSS JOIN user_vec u
+       ORDER BY score DESC
+       LIMIT 20`,
+      [userId]
+    );
+    return rows;
+  } catch (error) {
+    console.error("Error in SVD recommendations:", error);
+    return [];
+  }
+}
+
+async function getPopularRecs() {
+  try {
+    const { rows } = await pool.query(
+      `SELECT 
+  c.content_id, 
+  c.title, 
+  c.poster_url, 
+  c.genre,
+  'top_rated' AS type,
+  AVG(r.rating) AS avg_rating
+FROM content c
+JOIN reviews r ON c.content_id = r.content_id
+GROUP BY c.content_id, c.title, c.poster_url, c.genre
+HAVING AVG(r.rating) > 0
+ORDER BY avg_rating DESC
+LIMIT 10;
+`
+    );
+    return rows;
+  } catch (error) {
+    console.error("Error in popular recommendations:", error);
+    return [];
+  }
+}
+
+
+
+
+
 
 app.get("/recommendmovies", isAuthenticated, async (req, res) => {
   try {
@@ -345,6 +947,7 @@ app.get("/recommendshows", isAuthenticated, async (req, res) => {
 });
 
 // Simplified friends endpoints
+// Enhanced friend suggestions endpoint
 app.get("/friends", isAuthenticated, async (req, res) => {
   try {
     const userId = req.session.userId;
@@ -360,42 +963,125 @@ app.get("/friends", isAuthenticated, async (req, res) => {
       [userId]
     );
 
-    // Friend requests
-    const requests = await pool.query(
+    // Incoming friend requests (others requesting current user)
+    const incomingRequests = await pool.query(
       `SELECT u.user_id, u.username, u.profile_picture, f.created_at 
        FROM friends f JOIN users u ON f.user_id = u.user_id 
        WHERE f.friend_id = $1 AND f.status = 'pending'`,
       [userId]
     );
 
-    // Suggestions (friends of friends)
-    const suggestions = await pool.query(
-      `SELECT DISTINCT u.user_id, u.username, u.profile_picture 
-       FROM friends f1 
-       JOIN friends f2 ON f1.friend_id = f2.user_id 
-       JOIN users u ON f2.friend_id = u.user_id 
-       WHERE f1.user_id = $1 
-       AND f2.friend_id != $1 
-       AND NOT EXISTS (
-         SELECT 1 FROM friends 
-         WHERE (user_id = $1 AND friend_id = f2.friend_id) 
-         OR (user_id = f2.friend_id AND friend_id = $1)
-       )
-       LIMIT 10`,
+    // Outgoing friend requests (current user requesting others)
+    const outgoingRequests = await pool.query(
+      `SELECT u.user_id, u.username, u.profile_picture, f.created_at 
+       FROM friends f JOIN users u ON f.friend_id = u.user_id 
+       WHERE f.user_id = $1 AND f.status = 'pending'`,
       [userId]
     );
 
+    // Suggestions (same as before)
+    const suggestions = await pool.query(
+      `WITH 
+       -- Current user's favorite genres
+       my_genres AS (
+         SELECT unnest(favorite_genres) AS genre 
+         FROM users 
+         WHERE user_id = $1
+       ),
+       
+       -- Current user's friends
+       my_friends AS (
+         SELECT friend_id FROM friends 
+         WHERE user_id = $1 AND status = 'accepted'
+         UNION
+         SELECT user_id FROM friends 
+         WHERE friend_id = $1 AND status = 'accepted'
+       ),
+       
+       -- Friends of friends (excluding direct friends)
+       fof AS (
+         SELECT DISTINCT u.user_id, u.username, u.profile_picture, u.favorite_genres
+         FROM friends f1
+         JOIN friends f2 ON f1.friend_id = f2.user_id
+         JOIN users u ON f2.friend_id = u.user_id
+         WHERE f1.user_id = $1
+         AND f2.status = 'accepted'
+         AND u.user_id != $1
+         AND u.user_id NOT IN (SELECT friend_id FROM my_friends)
+       ),
+       
+       -- Users with matching genres (excluding friends)
+       genre_matches AS (
+         SELECT u.user_id, u.username, u.profile_picture, u.favorite_genres
+         FROM users u
+         WHERE u.user_id != $1
+         AND u.user_id NOT IN (SELECT friend_id FROM my_friends)
+         AND (
+           SELECT COUNT(*) 
+           FROM unnest(u.favorite_genres) AS genre
+           WHERE genre IN (SELECT genre FROM my_genres)
+         ) >= 2
+       ),
+       
+       -- Combined suggestions with scoring
+       combined AS (
+         -- Friends of friends get higher base score
+         SELECT 
+           user_id,
+           username,
+           profile_picture,
+           favorite_genres,
+           50 AS base_score,
+           'fof' AS source
+         FROM fof
+         
+         UNION ALL
+         
+         -- Genre matches get standard score
+         SELECT 
+           user_id,
+           username,
+           profile_picture,
+           favorite_genres,
+           (
+             SELECT COUNT(*) 
+             FROM unnest(favorite_genres) AS genre
+             WHERE genre IN (SELECT genre FROM my_genres)
+           ) * 10 AS base_score,
+           'genre' AS source
+         FROM genre_matches
+       )
+       
+       SELECT 
+         user_id,
+         username,
+         profile_picture,
+         base_score + (
+           SELECT COUNT(*) 
+           FROM unnest(favorite_genres) AS genre
+           WHERE genre IN (SELECT genre FROM my_genres)
+         ) * 5 AS total_score,
+         source
+       FROM combined
+       ORDER BY total_score DESC
+       LIMIT 20`,
+      [userId]
+    );
+    
     res.status(200).json({
       friends: friends.rows,
-      requests: requests.rows,
+      incomingRequests: incomingRequests.rows,
+      outgoingRequests: outgoingRequests.rows,
       suggestions: suggestions.rows
     });
   } catch (error) {
     console.error("Error fetching friends data:", error);
-    res.status(500).json({ message: "Internal server error" });
+    res.status(500).json({ 
+      message: "Internal server error",
+      error: process.env.NODE_ENV === 'development' ? error.message : null
+    });
   }
 });
-
 // Send Friend Request
 app.post("/send-friend-request", isAuthenticated, async (req, res) => {
   try {
@@ -869,3 +1555,24 @@ app.post("/notifications/read", async (req, res) => {
   }
 });
 
+// Collaborative filtering recommendations endpoint
+app.get("/collab-recommendations", isAuthenticated, async (req, res) => {
+  try {
+    const userId = req.session.userId;
+
+    const recs = await pool.query(
+      `SELECT c.content_id, c.title, c.poster_url, r.predicted_rating
+       FROM collab_recommendations r
+       JOIN content c ON r.content_id = c.content_id
+       WHERE r.user_id = $1
+       ORDER BY r.predicted_rating DESC
+       LIMIT 20`,
+      [userId]
+    );
+
+    res.status(200).json({ data: recs.rows });
+  } catch (error) {
+    console.error("Error fetching collaborative recommendations:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});

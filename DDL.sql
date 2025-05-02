@@ -80,3 +80,34 @@ CREATE TABLE notifications (
   is_read BOOLEAN DEFAULT FALSE
 );
 -- notifications
+
+CREATE TABLE IF NOT EXISTS collab_recommendations (
+id SERIAL PRIMARY KEY,
+user_id INT NOT NULL,
+content_id INT NOT NULL,
+predicted_rating FLOAT NOT NULL
+);
+-- collaborative recommendations
+CREATE TABLE IF NOT EXISTS svd_user_factors (
+user_id INT PRIMARY KEY REFERENCES users(user_id),
+factors FLOAT[] NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS svd_item_factors (
+content_id INT PRIMARY KEY REFERENCES content(content_id),
+factors FLOAT[] NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS movie_similarity (
+movie_id1 INT REFERENCES content(content_id),
+movie_id2 INT REFERENCES content(content_id),
+similarity FLOAT NOT NULL,
+PRIMARY KEY (movie_id1, movie_id2)
+);
+
+CREATE TABLE IF NOT EXISTS user_similarity (
+user_id1 INT REFERENCES users(user_id),
+user_id2 INT REFERENCES users(user_id),
+similarity FLOAT NOT NULL,
+PRIMARY KEY (user_id1, user_id2)
+);

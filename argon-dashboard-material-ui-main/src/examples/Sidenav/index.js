@@ -69,7 +69,7 @@ function Sidenav({ color, brand, brandName, routes, ...rest }) {
     return () => window.removeEventListener("resize", handleMiniSidenav);
   }, [dispatch, location]);
 
-  const allowedRoutes = ["Friends", "Chats", "Shows", "Anime", "Movies", "Profile", "Logout", "Dashboard"];
+  const allowedRoutes = ["Friends", "Chats", "Shows", "Anime", "Movies", "Profile", "Logout", "Dashboard","GroupRecommendation"];
 
   // Render all the routes from the routes.js (All the visible items on the Sidenav)
   const renderRoutes = routes

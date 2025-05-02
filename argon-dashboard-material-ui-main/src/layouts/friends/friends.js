@@ -1,13 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Grid, Card, Avatar, Typography, Button, Box, Tabs, Tab,
   TextField, InputAdornment, Divider, List, ListItem, ListItemAvatar,
-  ListItemText, CircularProgress, Snackbar, Alert
+  ListItemText, CircularProgress, Snackbar, Alert, Chip, Accordion,
+  AccordionSummary, AccordionDetails
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import CheckIcon from '@mui/icons-material/Check';
 import ClearIcon from '@mui/icons-material/Clear';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { apiUrl } from "config/config";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import DashboardNavbar from "examples/Navbars/DashboardNavbar";
@@ -16,7 +18,8 @@ const Friends = () => {
   const [activeTab, setActiveTab] = useState('friends');
   const [friendsData, setFriendsData] = useState({
     friends: [],
-    requests: [],
+    incomingRequests: [],
+    outgoingRequests: [],
     suggestions: []
   });
   const [searchQuery, setSearchQuery] = useState('');
@@ -30,7 +33,7 @@ const Friends = () => {
     severity: 'success'
   });
 
-  const fetchFriendsData = async () => {
+  const fetchFriendsData = useCallback(async () => {
     try {
       setIsLoading(true);
       const response = await fetch(`${apiUrl}/friends`, {
@@ -42,20 +45,26 @@ const Friends = () => {
       }
       
       const data = await response.json();
-      setFriendsData(data);
+      setFriendsData({
+        friends: data.friends || [],
+        incomingRequests: data.incomingRequests || [],
+        outgoingRequests: data.outgoingRequests || [],
+        suggestions: data.suggestions || []
+      });
+      setError(null);
     } catch (err) {
       setError(err.message);
       console.error('Error fetching friends data:', err);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchFriendsData();
-  }, []);
+  }, [fetchFriendsData]);
 
-  const handleSearch = async (query) => {
+  const handleSearch = useCallback(async (query) => {
     setSearchQuery(query);
     if (!query.trim()) {
       setSearchResults([]);
@@ -76,104 +85,200 @@ const Friends = () => {
       
       const data = await response.json();
       setSearchResults(data);
+      setError(null);
     } catch (err) {
       setError(err.message);
       console.error('Error searching users:', err);
     } finally {
       setIsSearching(false);
     }
-  };
-// Updated handleSendRequest function
-const handleSendRequest = async (friendId) => {
-  try {
-    const response = await fetch(`${apiUrl}/send-friend-request`, {
-      method: 'POST',
-      credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ friendId })
-    });
-    
-    const data = await response.json();
-    
-    if (!response.ok) {
-      throw new Error(data.message || 'Failed to send request');
-    }
+  }, []);
 
-    setSnackbar({
-      open: true,
-      message: data.message,
-      severity: 'success'
-    });
-
-    // Update UI immediately
-    setFriendsData(prev => ({
-      ...prev,
-      suggestions: prev.suggestions.filter(s => s.user_id !== friendId),
-      requests: prev.requests.filter(r => r.user_id !== friendId)
-    }));
-    
-    setSearchResults(prev => prev.filter(u => u.user_id !== friendId));
-  } catch (error) {
-    setSnackbar({
-      open: true,
-      message: error.message,
-      severity: 'error'
-    });
-  }
-};
-
-// Updated handleRespondRequest function
-const handleRespondRequest = async (friendId, accept) => {
-  try {
-    const response = await fetch(`${apiUrl}/respond-friend-request`, {
-      method: 'POST',
-      credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ friendId, accept })
-    });
-    
-    const data = await response.json();
-    
-    if (!response.ok) {
-      throw new Error(data.message || 'Failed to respond to request');
-    }
-
-    setSnackbar({
-      open: true,
-      message: data.message,
-      severity: 'success'
-    });
-
-    // Update UI immediately
-    setFriendsData(prev => {
-      const updatedRequests = prev.requests.filter(r => r.user_id !== friendId);
-      const newFriend = accept 
-        ? prev.requests.find(r => r.user_id === friendId)
-        : null;
+  const handleSendRequest = useCallback(async (friendId) => {
+    try {
+      const response = await fetch(`${apiUrl}/send-friend-request`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ friendId })
+      });
       
-      return {
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to send request');
+      }
+
+      setSnackbar({
+        open: true,
+        message: data.message || 'Friend request sent successfully',
+        severity: 'success'
+      });
+
+      // Update UI
+      setFriendsData(prev => ({
         ...prev,
-        requests: updatedRequests,
-        friends: accept ? [...prev.friends, newFriend] : prev.friends
-      };
-    });
-  } catch (error) {
-    setSnackbar({
-      open: true,
-      message: error.message,
-      severity: 'error'
-    });
-  }
-};
+        suggestions: prev.suggestions.filter(s => s.user_id !== friendId),
+        outgoingRequests: [...prev.outgoingRequests, { 
+          user_id: friendId, 
+          username: searchResults.find(u => u.user_id === friendId)?.username || '',
+          profile_picture: searchResults.find(u => u.user_id === friendId)?.profile_picture || '',
+          created_at: new Date().toISOString()
+        }]
+      }));
+      
+      setSearchResults(prev => prev.filter(u => u.user_id !== friendId));
+    } catch (error) {
+      setSnackbar({
+        open: true,
+        message: error.message,
+        severity: 'error'
+      });
+    }
+  }, [searchResults]);
 
+  const handleRespondRequest = useCallback(async (friendId, accept) => {
+    try {
+      const response = await fetch(`${apiUrl}/respond-friend-request`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ friendId, accept })
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to respond to request');
+      }
 
-  const handleCloseSnackbar = () => {
+      setSnackbar({
+        open: true,
+        message: data.message || `Request ${accept ? 'accepted' : 'declined'} successfully`,
+        severity: 'success'
+      });
+
+      // Update UI
+      setFriendsData(prev => {
+        const request = prev.incomingRequests.find(r => r.user_id === friendId);
+        return {
+          ...prev,
+          incomingRequests: prev.incomingRequests.filter(r => r.user_id !== friendId),
+          friends: accept ? [...prev.friends, request] : prev.friends,
+          // Remove from suggestions if they were there
+          suggestions: prev.suggestions.filter(s => s.user_id !== friendId)
+        };
+      });
+    } catch (error) {
+      setSnackbar({
+        open: true,
+        message: error.message,
+        severity: 'error'
+      });
+    }
+  }, []);
+
+  const handleCancelRequest = useCallback(async (friendId) => {
+    try {
+      const response = await fetch(`${apiUrl}/cancel-friend-request`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ friendId })
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to cancel request');
+      }
+
+      setSnackbar({
+        open: true,
+        message: data.message || 'Friend request cancelled successfully',
+        severity: 'success'
+      });
+
+      // Update UI
+      setFriendsData(prev => ({
+        ...prev,
+        outgoingRequests: prev.outgoingRequests.filter(r => r.user_id !== friendId),
+        // Add back to suggestions if appropriate
+        suggestions: [...prev.suggestions, {
+          user_id: friendId,
+          username: prev.outgoingRequests.find(r => r.user_id === friendId)?.username,
+          profile_picture: prev.outgoingRequests.find(r => r.user_id === friendId)?.profile_picture
+        }].filter((v, i, a) => a.findIndex(t => t.user_id === v.user_id) === i)
+      }));
+    } catch (error) {
+      setSnackbar({
+        open: true,
+        message: error.message,
+        severity: 'error'
+      });
+    }
+  }, []);
+
+  const handleCloseSnackbar = useCallback(() => {
     setSnackbar(prev => ({ ...prev, open: false }));
-  };
+  }, []);
+
+  const isFriend = useCallback((userId) => {
+    return friendsData.friends.some(f => f.user_id === userId);
+  }, [friendsData.friends]);
+
+  const hasPendingRequest = useCallback((userId) => {
+    return friendsData.outgoingRequests.some(r => r.user_id === userId) || 
+           friendsData.incomingRequests.some(r => r.user_id === userId);
+  }, [friendsData.outgoingRequests, friendsData.incomingRequests]);
+
+  const renderUserCard = (user, showActions = true) => (
+    <Card sx={{ p: 2, display: 'flex', alignItems: 'center' }}>
+      <Avatar 
+        src={user.profile_picture || '/default-avatar.png'} 
+        sx={{ width: 56, height: 56 }}
+      />
+      <Box ml={2} flexGrow={1}>
+        <Typography variant="subtitle1" fontWeight="medium">
+          {user.username}
+        </Typography>
+        {user.mutual_friends > 0 && (
+          <Typography variant="caption" color="text.secondary">
+            {user.mutual_friends} mutual friends
+          </Typography>
+        )}
+      </Box>
+      {showActions && (
+        isFriend(user.user_id) ? (
+          <Chip label="Friends" color="success" size="small" />
+        ) : hasPendingRequest(user.user_id) ? (
+          <Chip 
+            label={
+              friendsData.outgoingRequests.some(r => r.user_id === user.user_id) 
+                ? "Request Sent" 
+                : "Respond to Request"
+            } 
+            size="small" 
+          />
+        ) : (
+          <Button 
+            size="small" 
+            variant="contained" 
+            startIcon={<PersonAddIcon />}
+            onClick={() => handleSendRequest(user.user_id)}
+          >
+            Add Friend
+          </Button>
+        )
+      )}
+    </Card>
+  );
 
   return (
     <DashboardLayout>
@@ -208,35 +313,23 @@ const handleRespondRequest = async (friendId, accept) => {
         {/* Error State */}
         {error && !isLoading && (
           <Box p={2}>
-            <Alert severity="error">{error}</Alert>
+            <Alert severity="error" onClose={() => setError(null)}>
+              {error}
+            </Alert>
           </Box>
         )}
 
-        {/* Show search results if query exists */}
+        {/* Search Results */}
         {!isLoading && !isSearching && searchQuery && (
           <Box mb={4}>
             <Typography variant="h6" gutterBottom>Search Results</Typography>
             {searchResults.length === 0 ? (
-              <Typography>No users found</Typography>
+              <Typography color="text.secondary">No users found</Typography>
             ) : (
               <Grid container spacing={2}>
                 {searchResults.map(user => (
                   <Grid item xs={12} sm={6} md={4} key={user.user_id}>
-                    <Card sx={{ p: 2, display: 'flex', alignItems: 'center' }}>
-                      <Avatar src={user.profile_picture || '/default-avatar.png'} />
-                      <Box ml={2} flexGrow={1}>
-                        <Typography variant="subtitle1">{user.username}</Typography>
-                      </Box>
-                      <Button 
-                        size="small" 
-                        variant="contained" 
-                        startIcon={<PersonAddIcon />}
-                        onClick={() => handleSendRequest(user.user_id)}
-                        disabled={friendsData.friends.some(f => f.user_id === user.user_id)}
-                      >
-                        {friendsData.friends.some(f => f.user_id === user.user_id) ? 'Friends' : 'Add'}
-                      </Button>
-                    </Card>
+                    {renderUserCard(user)}
                   </Grid>
                 ))}
               </Grid>
@@ -244,45 +337,42 @@ const handleRespondRequest = async (friendId, accept) => {
           </Box>
         )}
 
-        {/* Main Content when not searching */}
+        {/* Main Content */}
         {!isLoading && !error && !searchQuery && (
           <>
             <Tabs 
               value={activeTab} 
               onChange={(e, newValue) => setActiveTab(newValue)}
               sx={{ mb: 3 }}
+              variant="fullWidth"
             >
               <Tab value="friends" label={`Friends (${friendsData.friends.length})`} />
-              <Tab value="requests" label={`Requests (${friendsData.requests.length})`} />
+              <Tab 
+                value="requests" 
+                label={`Requests (${
+                  friendsData.incomingRequests.length + friendsData.outgoingRequests.length
+                })`} 
+              />
               <Tab value="suggestions" label={`Suggestions (${friendsData.suggestions.length})`} />
             </Tabs>
+
+            <Divider sx={{ mb: 3 }} />
 
             {/* Friends List */}
             {activeTab === 'friends' && (
               <Box>
                 {friendsData.friends.length === 0 ? (
-                  <Typography>You haven't added any friends yet</Typography>
+                  <Typography color="text.secondary">
+                    You haven't added any friends yet
+                  </Typography>
                 ) : (
-                  <List>
+                  <Grid container spacing={2}>
                     {friendsData.friends.map(friend => (
-                      <ListItem key={friend.user_id}>
-                        <ListItemAvatar>
-                          <Avatar src={friend.profile_picture || '/default-avatar.png'} />
-                        </ListItemAvatar>
-                        <ListItemText 
-                          primary={friend.username}
-                          secondary={`Friends since ${new Date(friend.created_at).toLocaleDateString()}`}
-                        />
-                        <Button 
-                          size="small" 
-                          variant="outlined"
-                          disabled
-                        >
-                          Friends
-                        </Button>
-                      </ListItem>
+                      <Grid item xs={12} sm={6} md={4} key={friend.user_id}>
+                        {renderUserCard(friend, false)}
+                      </Grid>
                     ))}
-                  </List>
+                  </Grid>
                 )}
               </Box>
             )}
@@ -290,43 +380,104 @@ const handleRespondRequest = async (friendId, accept) => {
             {/* Friend Requests */}
             {activeTab === 'requests' && (
               <Box>
-                {friendsData.requests.length === 0 ? (
-                  <Typography>No pending friend requests</Typography>
+                {friendsData.incomingRequests.length === 0 && friendsData.outgoingRequests.length === 0 ? (
+                  <Typography color="text.secondary">
+                    No pending friend requests
+                  </Typography>
                 ) : (
-                  <List>
-                    {friendsData.requests.map(request => (
-                      <ListItem key={request.user_id}>
-                        <ListItemAvatar>
-                          <Avatar src={request.profile_picture || '/default-avatar.png'} />
-                        </ListItemAvatar>
-                        <ListItemText 
-                          primary={request.username}
-                          secondary={`Sent ${new Date(request.created_at).toLocaleDateString()}`}
-                        />
-                        <Box>
-                          <Button 
-                            size="small" 
-                            variant="contained" 
-                            color="success"
-                            startIcon={<CheckIcon />}
-                            sx={{ mr: 1 }}
-                            onClick={() => handleRespondRequest(request.user_id, true)}
-                          >
-                            Accept
-                          </Button>
-                          <Button 
-                            size="small" 
-                            variant="outlined" 
-                            color="error"
-                            startIcon={<ClearIcon />}
-                            onClick={() => handleRespondRequest(request.user_id, false)}
-                          >
-                            Decline
-                          </Button>
-                        </Box>
-                      </ListItem>
-                    ))}
-                  </List>
+                  <>
+                    <Accordion defaultExpanded>
+                      <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                        <Typography>Incoming Requests ({friendsData.incomingRequests.length})</Typography>
+                      </AccordionSummary>
+                      <AccordionDetails>
+                        {friendsData.incomingRequests.length === 0 ? (
+                          <Typography color="text.secondary">No incoming requests</Typography>
+                        ) : (
+                          <List disablePadding>
+                            {friendsData.incomingRequests.map(request => (
+                              <ListItem key={request.user_id} sx={{ py: 2 }}>
+                                <ListItemAvatar>
+                                  <Avatar 
+                                    src={request.profile_picture || '/default-avatar.png'} 
+                                    sx={{ width: 56, height: 56 }}
+                                  />
+                                </ListItemAvatar>
+                                <ListItemText 
+                                  primary={
+                                    <Typography variant="subtitle1" fontWeight="medium">
+                                      {request.username}
+                                    </Typography>
+                                  }
+                                  secondary={`Sent ${new Date(request.created_at).toLocaleDateString()}`}
+                                />
+                                <Box display="flex" gap={1}>
+                                  <Button 
+                                    size="small" 
+                                    variant="contained" 
+                                    color="success"
+                                    startIcon={<CheckIcon />}
+                                    onClick={() => handleRespondRequest(request.user_id, true)}
+                                  >
+                                    Accept
+                                  </Button>
+                                  <Button 
+                                    size="small" 
+                                    variant="outlined" 
+                                    color="error"
+                                    startIcon={<ClearIcon />}
+                                    onClick={() => handleRespondRequest(request.user_id, false)}
+                                  >
+                                    Decline
+                                  </Button>
+                                </Box>
+                              </ListItem>
+                            ))}
+                          </List>
+                        )}
+                      </AccordionDetails>
+                    </Accordion>
+
+                    <Accordion defaultExpanded>
+                      <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                        <Typography>Outgoing Requests ({friendsData.outgoingRequests.length})</Typography>
+                      </AccordionSummary>
+                      <AccordionDetails>
+                        {friendsData.outgoingRequests.length === 0 ? (
+                          <Typography color="text.secondary">No outgoing requests</Typography>
+                        ) : (
+                          <List disablePadding>
+                            {friendsData.outgoingRequests.map(request => (
+                              <ListItem key={request.user_id} sx={{ py: 2 }}>
+                                <ListItemAvatar>
+                                  <Avatar 
+                                    src={request.profile_picture || '/default-avatar.png'} 
+                                    sx={{ width: 56, height: 56 }}
+                                  />
+                                </ListItemAvatar>
+                                <ListItemText 
+                                  primary={
+                                    <Typography variant="subtitle1" fontWeight="medium">
+                                      {request.username}
+                                    </Typography>
+                                  }
+                                  secondary={`Sent ${new Date(request.created_at).toLocaleDateString()}`}
+                                />
+                                <Button 
+                                  size="small" 
+                                  variant="outlined" 
+                                  color="secondary"
+                                  onClick={() => handleCancelRequest(request.user_id)}
+                                >
+                                  Cancel Request
+                                </Button>
+                              </ListItem>
+                            ))}
+                          </List>
+                        )}
+                      </AccordionDetails>
+                    </Accordion>
+                  </>
                 )}
               </Box>
             )}
@@ -335,26 +486,14 @@ const handleRespondRequest = async (friendId, accept) => {
             {activeTab === 'suggestions' && (
               <Box>
                 {friendsData.suggestions.length === 0 ? (
-                  <Typography>No suggestions available</Typography>
+                  <Typography color="text.secondary">
+                    No suggestions available
+                  </Typography>
                 ) : (
                   <Grid container spacing={2}>
                     {friendsData.suggestions.map(user => (
                       <Grid item xs={12} sm={6} md={4} key={user.user_id}>
-                        <Card sx={{ p: 2, display: 'flex', alignItems: 'center' }}>
-                          <Avatar src={user.profile_picture || '/default-avatar.png'} />
-                          <Box ml={2} flexGrow={1}>
-                            <Typography variant="subtitle1">{user.username}</Typography>
-                          </Box>
-                          <Button 
-                            size="small" 
-                            variant="contained" 
-                            startIcon={<PersonAddIcon />}
-                            onClick={() => handleSendRequest(user.user_id)}
-                            disabled={friendsData.friends.some(f => f.user_id === user.user_id)}
-                          >
-                            {friendsData.friends.some(f => f.user_id === user.user_id) ? 'Friends' : 'Add'}
-                          </Button>
-                        </Card>
+                        {renderUserCard(user)}
                       </Grid>
                     ))}
                   </Grid>
