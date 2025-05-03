@@ -1,20 +1,4 @@
-import React from 'react';
-/**
-=========================================================
-* Argon Dashboard 2 MUI - v3.0.1
-=========================================================
-
-* Product Page: https://www.creative-tim.com/product/argon-dashboard-material-ui
-* Copyright 2023 Creative Tim (https://www.creative-tim.com)
-
-Coded by www.creative-tim.com
-
- =========================================================
-
-* The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-*/
-
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 
 // @mui material components
 import Card from "@mui/material/Card";
@@ -35,40 +19,34 @@ import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import breakpoints from "assets/theme/base/breakpoints";
 
 // Images
-import burceMars from "assets/images/bruce-mars.jpg";
+import burceMars from "assets/images/girl.png";
 import { useNavigate } from 'react-router-dom';
 
-function Header() {
+function Header({ tabValue, setTabValue }) {
   const [tabsOrientation, setTabsOrientation] = useState("horizontal");
-  const [tabValue, setTabValue] = useState(0);
 
   useEffect(() => {
-    // A function that sets the orientation state of the tabs.
     function handleTabsOrientation() {
       return window.innerWidth < breakpoints.values.sm
         ? setTabsOrientation("vertical")
         : setTabsOrientation("horizontal");
     }
 
-    /** 
-     The event listener that's calling the handleTabsOrientation function when resizing the window.
-    */
     window.addEventListener("resize", handleTabsOrientation);
-
-    // Call the handleTabsOrientation function to set the state with the initial value.
     handleTabsOrientation();
 
-    // Remove event listener on cleanup
     return () => window.removeEventListener("resize", handleTabsOrientation);
-  }, [tabsOrientation]);
+  }, []);
+
+  const navigate = useNavigate();
 
   const handleSetTabValue = (event, newValue) => {
     setTabValue(newValue);
     if (newValue === 0) navigate("/friends");
-    if (newValue === 1) navigate("/chats");
-  }
+    else if (newValue === 1) navigate("/chats");
+  };
+
   const username = localStorage.getItem("user");
-  const navigate = useNavigate();
 
   return (
     <ArgonBox position="relative">
@@ -98,32 +76,24 @@ function Header() {
               </ArgonTypography>
             </ArgonBox>
           </Grid>
-          <Grid item xs={12} md={6} lg={4} sx={{ ml: "auto" }}>
+          <Grid item xs={12} md={6} lg={10} sx={{ ml: "auto" }}>
             <AppBar position="static">
               <Tabs orientation={tabsOrientation} value={tabValue} onChange={handleSetTabValue}>
                 <Tab
                   label="Friends"
-                  icon={
-                    <i className="ni ni-single-02" style={{ marginTop: "6px", marginRight: "8px" }} />
-                  }
+                  icon={<i className="ni ni-single-02" style={{ marginTop: "6px", marginRight: "8px" }} />}
                 />
                 <Tab
                   label="Chats"
-                  icon={
-                    <i
-                      className="ni ni-chat-round"
-                      style={{ marginTop: "6px", marginRight: "8px" }}
-                    />
-                  }
+                  icon={<i className="ni ni-chat-round" style={{ marginTop: "6px", marginRight: "8px" }} />}
                 />
                 <Tab
                   label="Reviews"
-                  icon={
-                    <i
-                      className="ni ni-satisfied"
-                      style={{ marginTop: "6px", marginRight: "8px" }}
-                    />
-                  }
+                  icon={<i className="ni ni-satisfied" style={{ marginTop: "6px", marginRight: "8px" }} />}
+                />
+                <Tab
+                  label="Profile"
+                  icon={<i className="ni ni-single-copy-04" style={{ marginTop: "6px", marginRight: "8px" }} />}
                 />
               </Tabs>
             </AppBar>

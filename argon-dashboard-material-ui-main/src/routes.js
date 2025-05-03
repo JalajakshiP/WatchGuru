@@ -6,6 +6,10 @@ import SignUp from "layouts/authentication/sign-up";
 import HomePage from "layouts/home";
 import SelectGenres from "layouts/authentication/select-genres";
 import Friends from "layouts/friends/friends";
+// New forum components
+import QuestionsList from "layouts/forum/QuestionsList";
+import QuestionDetail from "layouts/forum/QuestionDetail";
+import AskQuestion from "layouts/forum/AskQuestion";
 import Chats from "layouts/chats/Chats";
 import ChatsHome from "layouts/chats/ChatsHome";
 import Shows from "layouts/shows/shows";
@@ -21,6 +25,7 @@ import Watched from "layouts/history/history";
 import ArgonBox from "components/ArgonBox";
 import ProtectedRoute from "layouts/authentication/components/ProtectedRoute/ProtectedRoutes";
 import GroupRecommendation from "layouts/group-recommendation";
+import FriendProfile from 'layouts/friends/friendprofile';
 
 const routes = [
   {
@@ -103,6 +108,57 @@ const routes = [
     ),
     layout: "dashboard",
   },
+  {
+    type: "route",
+    name: "FriendProfile",
+    key: "friendprofile",
+    route: "/friend/:id",
+    icon: <ArgonBox component="i" color="success" fontSize="14px" className="ni ni-single-02" />,
+    component: (
+      <ProtectedRoute>
+        <FriendProfile />
+      </ProtectedRoute>
+    ),
+    layout: "dashboard",
+  },
+// New forum routes
+{
+  type: "route",
+  name: "Forum",
+  key: "forum",
+  route: "/forum",
+  icon: <ArgonBox component="i" color="info" fontSize="14px" className="ni ni-bulb-61" />,
+  component: (
+    <ProtectedRoute>
+      <QuestionsList />
+    </ProtectedRoute>
+  ),
+  layout: "dashboard",
+},
+{
+  type: "route",
+  name: "QuestionDetail",
+  key: "question-detail",
+  route: "/questions/:id",
+  component: (
+    <ProtectedRoute>
+      <QuestionDetail />
+    </ProtectedRoute>
+  ),
+  layout: "dashboard",
+},
+{
+  type: "route",
+  name: "AskQuestion",
+  key: "ask-question",
+  route: "/forum/ask",
+  component: (
+    <ProtectedRoute>
+      <AskQuestion />
+    </ProtectedRoute>
+  ),
+  layout: "dashboard",
+},
   {
     type: "route",
     name: "Chats",

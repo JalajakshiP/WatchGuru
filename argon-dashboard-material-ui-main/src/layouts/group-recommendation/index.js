@@ -311,7 +311,9 @@ const GroupRecommendation = () => {
                         title={recommendation.movies[0].title}
                         genres={recommendation.movies[0].genre}
                         contentId={recommendation.movies[0].content_id}
-                        rating={recommendation.movies[0].avg_rating?.toFixed(1) || 'N/A'}
+                        rating={!isNaN(parseFloat(recommendation.movies[0].avg_rating))
+                          ? parseFloat(recommendation.movies[0].avg_rating).toFixed(1)
+                          : 'N/A'}
                         sx={{ 
                           boxShadow: 3,
                           '& .MuiCardMedia-root': {

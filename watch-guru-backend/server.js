@@ -17,7 +17,7 @@ const pool = new Pool({
   user: 'postgres',
   host: 'localhost',
   database: 'watchguru',
-  password: '12345678',
+  password: 'chocolate',
   port: 5432,
 });
 
@@ -431,7 +431,7 @@ app.get("/recommendations", isAuthenticated, async (req, res) => {
       getItemBasedCFRecs(userId),
       getUserBasedCFRecs(userId),
       getSVDRecs(userId),
-      getPopularRecs()
+      getPopularRecs(userId)
     ]);
 
     // Process each recommendation type
@@ -547,7 +547,7 @@ app.post("/group-recommendations", isAuthenticated, async (req, res) => {
 
     // 4. If still nothing, get one popular movie not in exclude list
     if (commonRecommendations.length === 0) {
-      const popular = await getPopularRecs();
+      const popular = await getPopularRecs(userId);
       const availablePopular = popular.filter(movie => 
         !exclude.includes(movie.content_id)
       );
@@ -591,7 +591,7 @@ async function getCombinedRecommendations(userId) {
     getItemBasedCFRecs(userId),
     getUserBasedCFRecs(userId),
     getSVDRecs(userId),
-    getPopularRecs()
+    getPopularRecs(userId)
   ]);
   
   // Combine all recommendations and deduplicate
@@ -824,7 +824,7 @@ async function getSVDRecs(userId) {
   }
 }
 
-async function getPopularRecs() {
+async function getPopularRecs(userId) {
   try {
     const { rows } = await pool.query(
       `SELECT 
@@ -1985,3 +1985,250 @@ app.get("/history", async (req, res) => {
       res.status(500).json({ error: "Internal server error" });
     }
   });
+
+  //--reviews--
+app.get("/reviews", async (req, res) => {
+  try {
+    const userId = req.session.userId;
+    if (!userId) return res.status(401).json({ error: "Unauthorized" });
+    const query = `
+      SELECT 
+        c.title AS "contentTitle",
+        c.content_id AS "contentId",
+        r.review_text AS "reviewText",
+        r.rating
+      FROM Reviews r
+      JOIN content c ON r.content_id = c.content_id
+      WHERE r.user_id = $1
+      ORDER BY r.created_at DESC;
+    `;
+
+    const { rows } = await pool.query(query, [userId]);
+    res.json(rows);
+  } catch (err) {
+    console.error("Error fetching user reviews:", err);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+//frined profiles
+app.get('/friend/:id/profile', async (req, res) => {
+  const friendId = req.params.id;
+
+  try {
+    const user = await pool.query(
+      'SELECT username,favorite_genres, bio FROM users WHERE user_id = $1',
+      [friendId]
+    );
+
+
+    if (user.rows.length === 0) return res.status(404).json({ error: "User not found" });
+    console.log("lala",user.rows);
+    res.json({
+      username: user.rows[0].username,
+      bio: user.rows[0].bio,
+      genres: user.rows[0].favorite_genres,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Something went wrong' });
+  }
+});
+app.get('/friend/:id/reviews', async (req, res) => {
+  const friendId = req.params.id;
+
+  try {
+    const reviews = await pool.query(
+      `SELECT r.rating, r.review_text, c.title AS contentTitle, c.content_id
+       FROM reviews r
+       JOIN content c ON r.content_id = c.content_id
+       WHERE r.user_id = $1`,
+      [friendId]
+    );
+    console.log("rev",reviews.rows);
+    res.json(reviews.rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Error fetching reviews' });
+  }
+});
+// Questions API
+app.post('/questions', isAuthenticated, async (req, res) => {
+  try {
+    const { title, body, tags } = req.body;
+    const userId = req.session.userId;
+
+    if (!title || !body) {
+      return res.status(400).json({ message: "Title and body are required" });
+    }
+
+    const result = await pool.query(
+      `INSERT INTO questions (user_id, title, body, tags)
+       VALUES ($1, $2, $3, $4)
+       RETURNING *`,
+      [userId, title, body, tags || []]
+    );
+
+    // Get bot response if question is about recommendations
+    // if (title.toLowerCase().includes('recommend') || body.toLowerCase().includes('recommend')) {
+    //   const botResponse = await generateBotRecommendations(title + " " + body);
+      
+    //   await pool.query(
+    //     `INSERT INTO answers (question_id, user_id, body, is_bot)
+    //      VALUES ($1, $2, $3, true)`,
+    //     [result.rows[0].question_id, 0, botResponse]
+    //   );
+    // }
+
+    res.status(201).json(result.rows[0]);
+  } catch (error) {
+    console.error("Error creating question:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+// Get all questions
+app.get('/questions', async (req, res) => {
+    console.log("Received question:", req.body); // Add this log
+ 
+  try {
+    const { search } = req.query;
+    let query = `
+      SELECT q.*, u.username, u.profile_picture,
+             (SELECT COUNT(*) FROM answers a WHERE a.question_id = q.question_id) as answer_count
+      FROM questions q
+      JOIN users u ON q.user_id = u.user_id
+    `;
+    const params = [];
+
+    if (search) {
+      query += ` WHERE q.title ILIKE $1 OR q.body ILIKE $1`;
+      params.push(`%${search}%`);
+    }
+
+    query += ` ORDER BY q.created_at DESC`;
+
+    const result = await pool.query(query, params);
+    res.status(200).json(result.rows);
+  } catch (error) {
+    console.error("Error fetching questions:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+// Get single question with answers
+app.get('/questions/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Get question
+    const questionResult = await pool.query(
+      `SELECT q.*, u.username, u.profile_picture
+       FROM questions q
+       JOIN users u ON q.user_id = u.user_id
+       WHERE q.question_id = $1`,
+      [id]
+    );
+
+    if (questionResult.rows.length === 0) {
+      return res.status(404).json({ message: "Question not found" });
+    }
+
+    // Get answers
+    const answersResult = await pool.query(
+      `SELECT a.*, u.username, u.profile_picture,
+              COALESCE((
+                SELECT SUM(value)
+                FROM votes v
+                WHERE v.answer_id = a.answer_id
+              ), 0) as votes
+       FROM answers a
+       LEFT JOIN users u ON a.user_id = u.user_id
+       WHERE a.question_id = $1
+       ORDER BY votes DESC, a.created_at DESC`,
+      [id]
+    );
+
+    res.status(200).json({
+      question: questionResult.rows[0],
+      answers: answersResult.rows
+    });
+  } catch (error) {
+    console.error("Error fetching question:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+// Post answer
+app.post('/questions/:id/answers', isAuthenticated, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { body } = req.body;
+    const userId = req.session.userId;
+
+    if (!body) {
+      return res.status(400).json({ message: "Answer body is required" });
+    }
+
+    const result = await pool.query(
+      `INSERT INTO answers (question_id, user_id, body)
+       VALUES ($1, $2, $3)
+       RETURNING *`,
+      [id, userId, body]
+    );
+
+    res.status(201).json(result.rows[0]);
+  } catch (error) {
+    console.error("Error posting answer:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+// Vote on answer
+app.post('/votes', isAuthenticated, async (req, res) => {
+  try {
+    const { answerId, value } = req.body;
+    const userId = req.session.userId;
+
+    if (![-1, 1].includes(value)) {
+      return res.status(400).json({ message: "Invalid vote value" });
+    }
+
+    // Check if user already voted
+    const existingVote = await pool.query(
+      `SELECT * FROM votes
+       WHERE answer_id = $1 AND user_id = $2`,
+      [answerId, userId]
+    );
+
+    if (existingVote.rows.length > 0) {
+      // Update existing vote
+      await pool.query(
+        `UPDATE votes SET value = $1
+         WHERE answer_id = $2 AND user_id = $3`,
+        [value, answerId, userId]
+      );
+    } else {
+      // Create new vote
+      await pool.query(
+        `INSERT INTO votes (answer_id, user_id, value)
+         VALUES ($1, $2, $3)`,
+        [answerId, userId, value]
+      );
+    }
+
+    // Get updated vote count
+    const voteCount = await pool.query(
+      `SELECT COALESCE(SUM(value), 0) as total
+       FROM votes
+       WHERE answer_id = $1`,
+      [answerId]
+    );
+
+    res.status(200).json({ votes: voteCount.rows[0].total });
+  } catch (error) {
+    console.error("Error voting:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+

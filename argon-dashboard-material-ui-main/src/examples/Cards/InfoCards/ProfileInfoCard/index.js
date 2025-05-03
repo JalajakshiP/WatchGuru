@@ -125,11 +125,11 @@ function ProfileInfoCard({ title, description, favoriteGenres, action }) {
         <ArgonTypography variant="h6" fontWeight="medium" textTransform="capitalize">
           {title}
         </ArgonTypography>
-        <ArgonTypography component={Link} to={action.route} variant="body2" color="secondary">
+        {action && (<ArgonTypography component={Link} to={action.route} variant="body2" color="secondary">
           <Tooltip title={action.tooltip} placement="top">
             <Icon>edit</Icon>
           </Tooltip>
-        </ArgonTypography>
+        </ArgonTypography>)}
       </ArgonBox>
       <ArgonBox p={2}>
         <ArgonBox mb={2} lineHeight={1}>
@@ -170,7 +170,7 @@ ProfileInfoCard.propTypes = {
   action: PropTypes.shape({
     route: PropTypes.string.isRequired,
     tooltip: PropTypes.string.isRequired,
-  }).isRequired,
+  }),
 };
 
 export default ProfileInfoCard;

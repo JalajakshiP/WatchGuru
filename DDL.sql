@@ -131,3 +131,32 @@ CREATE TABLE IF NOT EXISTS watch_history (
   watched_at TIMESTAMP DEFAULT NOW(),
   PRIMARY KEY (user_id, content_id)
 );
+-- Questions and Answers tables
+CREATE TABLE questions (
+question_id SERIAL PRIMARY KEY,
+user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
+title VARCHAR(255) NOT NULL,
+body TEXT NOT NULL,
+created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+tags TEXT[] DEFAULT '{}'
+);
+
+CREATE TABLE answers (
+answer_id SERIAL PRIMARY KEY,
+question_id INTEGER REFERENCES questions(question_id) ON DELETE CASCADE,
+user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
+body TEXT NOT NULL,
+is_bot BOOLEAN DEFAULT FALSE,
+created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE votes (
+vote_id SERIAL PRIMARY KEY,
+answer_id INTEGER REFERENCES answers(answer_id) ON DELETE CASCADE,
+user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
+value INTEGER CHECK (value IN (-1, 1)),
+created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+UNIQUE (answer_id, user_id)
+);

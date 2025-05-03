@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Grid, Card, Avatar, Typography, Button, Box, Tabs, Tab,
   TextField, InputAdornment, Divider, List, ListItem, ListItemAvatar,
@@ -15,6 +16,7 @@ import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 
 const Friends = () => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('friends');
   const [friendsData, setFriendsData] = useState({
     friends: [],
@@ -239,7 +241,9 @@ const Friends = () => {
   }, [friendsData.outgoingRequests, friendsData.incomingRequests]);
 
   const renderUserCard = (user, showActions = true) => (
-    <Card sx={{ p: 2, display: 'flex', alignItems: 'center' }}>
+    <Card sx={{ p: 2, display: 'flex', alignItems: 'center', cursor: 'pointer' }}
+    onClick={() => navigate(`/friend/${user.user_id}`)}>
+      
       <Avatar 
         src={user.profile_picture || '/default-avatar.png'} 
         sx={{ width: 56, height: 56 }}
@@ -271,7 +275,7 @@ const Friends = () => {
             size="small" 
             variant="contained" 
             startIcon={<PersonAddIcon />}
-            onClick={() => handleSendRequest(user.user_id)}
+            onClick={(e) =>{e.stopPropagation(); handleSendRequest(user.user_id)}}
           >
             Add Friend
           </Button>
