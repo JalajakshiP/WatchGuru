@@ -6,6 +6,7 @@ import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import MovieCard from "components/ScreenCards/moviecard";
 import { apiUrl } from "config/config";
+import { Box } from "@mui/material";
 
 function ListContent() {
   const [listAnimes, setListAnimes] = useState([]);
@@ -22,7 +23,7 @@ function ListContent() {
         const result = await response.json();
         const animes = result.filter((item) => item.content_type === "anime");
         const movies = result.filter((item) => item.content_type === "movie");
-        const shows = result.filter((item) => item.content_type === "show" );
+        const shows = result.filter((item) => item.content_type === "show");
 
         setListAnimes(animes);
         setListMovies(movies);
@@ -56,7 +57,7 @@ function ListContent() {
                     contentId={item.content_id}
                     liked={item.liked}
                     inWatchlist={item.inwatchlist}
-                    watched={item.watched} 
+                    watched={item.watched}
                   />
                 </Grid>
               ))}
@@ -65,7 +66,10 @@ function ListContent() {
       )}
     </>
   );
-
+  const nothing =
+    listAnimes.length === 0 &&
+    listMovies.length === 0 &&
+    listShows.length === 0;
   return (
     <DashboardLayout>
       <DashboardNavbar setSearchQuery={setSearchQuery} />
@@ -73,9 +77,22 @@ function ListContent() {
         <ArgonTypography variant="h3" color="black" mb={4}>
           Your List Content
         </ArgonTypography>
-        {renderSection("List Animes", listAnimes)}
-        {renderSection("List Movies", listMovies)}
-        {renderSection("List Shows & Dramas", listShows)}
+
+        {nothing ? (<Box textAlign="center" mt={6}>
+          <img
+            src="https://media.giphy.com/media/xT9IgG50Fb7Mi0prBC/giphy.gif"
+            alt="Nothing Watched"
+            style={{ width: "300px", maxWidth: "100%" }}
+          />
+          <ArgonTypography variant="h5" mt={2} color="text">
+            Looks like you haven’t added anything to watch yet... Time to binge!
+          </ArgonTypography>
+        </Box>) : (<>
+          {renderSection("List Animes", listAnimes)}
+          {renderSection("List Movies", listMovies)}
+          {renderSection("List Shows & Dramas", listShows)}
+        </>
+        )}
       </ArgonBox>
     </DashboardLayout>
   );

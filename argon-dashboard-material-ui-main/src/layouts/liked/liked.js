@@ -6,7 +6,7 @@ import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import MovieCard from "components/ScreenCards/moviecard";
 import { apiUrl } from "config/config";
-
+import { Box } from "@mui/material";
 function LikedContent() {
   const [likedAnimes, setLikedAnimes] = useState([]);
   const [likedMovies, setLikedMovies] = useState([]);
@@ -65,7 +65,10 @@ function LikedContent() {
       )}
     </>
   );
-
+  const nothinglike =
+    likedAnimes.length === 0 &&
+    likedMovies.length === 0 &&
+    likedShows.length === 0;
   return (
     <DashboardLayout>
       <DashboardNavbar setSearchQuery={setSearchQuery} />
@@ -73,9 +76,21 @@ function LikedContent() {
         <ArgonTypography variant="h3" color="black" mb={4}>
           Your Liked Content
         </ArgonTypography>
-        {renderSection("Liked Animes", likedAnimes)}
+        
+        {nothinglike ? (
+                  <Box textAlign="center" mt={6}>
+                    <img
+                      src="https://media.giphy.com/media/xT9IgG50Fb7Mi0prBC/giphy.gif"
+                      alt="Nothing Watched"
+                      style={{ width: "300px", maxWidth: "100%" }}
+                    />
+                    <ArgonTypography variant="h5" mt={2} color="text">
+                      Looks like you haven’t liked anything yet... Time to binge!
+                    </ArgonTypography>
+                  </Box>
+                ) :(<>{renderSection("Liked Animes", likedAnimes)}
         {renderSection("Liked Movies", likedMovies)}
-        {renderSection("Liked Shows & Dramas", likedShows)}
+        {renderSection("Liked Shows & Dramas", likedShows)}</>)}
       </ArgonBox>
     </DashboardLayout>
   );
