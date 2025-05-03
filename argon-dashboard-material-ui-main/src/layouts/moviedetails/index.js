@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useParams } from "react-router-dom";
 import { 
   Button, Grid, Card, CardMedia, CardContent, 
@@ -21,6 +22,7 @@ function MovieDetails() {
   const [reviews, setReviews] = useState([]);
   const [ratingAvg, setRatingAvg] = useState(null);
   const [userId, setUserId] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     console.log("Fetching details for movie ID:", id); // Should log "4"
@@ -212,7 +214,7 @@ function MovieDetails() {
                   Director
                 </Typography>
                 <Typography>
-                  {movie.direction}
+                  {movie.director}
                 </Typography>
               </Grid>
               
@@ -406,7 +408,9 @@ function MovieDetails() {
               <Grid container spacing={2}>
                 {similarMovies.map((similar) => (
                   <Grid item xs={6} sm={4} md={3} key={similar.content_id}>
-                    <Card sx={{ bgcolor: "background.paper" }}>
+                    <Card 
+                    sx={{ bgcolor: "background.paper", cursor: "pointer" }}
+                    onClick={() => navigate(`/movie/${similar.content_id}`)}>
                       <CardMedia
                         component="img"
                         image={similar.poster_url}
