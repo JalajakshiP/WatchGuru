@@ -45,7 +45,7 @@ function QuestionsList() {
 
   return (
     <DashboardLayout>
-      <DashboardNavbar />
+      <DashboardNavbar  showSearch={false}/>
       <Box sx={{ p: { xs: 2, md: 3 }, maxWidth: 1200, mx: 'auto' }}>
         {/* Header Section */}
         <Box sx={{ 
@@ -75,7 +75,8 @@ function QuestionsList() {
               boxShadow: 'none',
               '&:hover': {
                 boxShadow: 'none'
-              }
+              },
+              backgroundColor: '#faff93',
             }}
           >
             Ask Question

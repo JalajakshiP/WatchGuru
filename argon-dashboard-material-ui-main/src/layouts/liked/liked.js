@@ -74,13 +74,13 @@ function LikedContent() {
       <DashboardNavbar setSearchQuery={setSearchQuery} />
       <ArgonBox py={3} px={2} sx={{ backgroundColor: "#ffffff", minHeight: "100vh" }}>
         <ArgonTypography variant="h3" color="black" mb={4}>
-          Your Liked Content
+          Favorites💖
         </ArgonTypography>
         
         {nothinglike ? (
                   <Box textAlign="center" mt={6}>
                     <img
-                      src="https://media.giphy.com/media/xT9IgG50Fb7Mi0prBC/giphy.gif"
+                      src="https://media.giphy.com/media/hhqLxYqC260vPlMPXI/giphy.gif"
                       alt="Nothing Watched"
                       style={{ width: "300px", maxWidth: "100%" }}
                     />
@@ -88,9 +88,9 @@ function LikedContent() {
                       Looks like you haven’t liked anything yet... Time to binge!
                     </ArgonTypography>
                   </Box>
-                ) :(<>{renderSection("Liked Animes", likedAnimes)}
-        {renderSection("Liked Movies", likedMovies)}
-        {renderSection("Liked Shows & Dramas", likedShows)}</>)}
+                ) :(<>{renderSection(" Animes", likedAnimes)}
+        {renderSection(" Movies", likedMovies)}
+        {renderSection("Shows & Dramas", likedShows)}</>)}
       </ArgonBox>
     </DashboardLayout>
   );

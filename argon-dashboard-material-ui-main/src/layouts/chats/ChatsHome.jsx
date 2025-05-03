@@ -29,10 +29,10 @@ function ChatsHome() {
 
   return (
     <DashboardLayout>
-      <DashboardNavbar />
+      <DashboardNavbar  showSearch={false}/>
       <ArgonBox p={3}>
         <ArgonTypography variant="h4" mb={3}>
-          Your Friends
+          Friends🫂
         </ArgonTypography>
 
         {friends.length === 0 ? (

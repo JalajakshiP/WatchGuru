@@ -69,11 +69,11 @@ function Chats() {
 
   return (
     <DashboardLayout>
-      <DashboardNavbar />
+      <DashboardNavbar  showSearch={false}/>
 
       <ArgonBox p={3}>
         <ArgonTypography variant="h4" mb={3}>
-          Chat with {friendName}
+          Chat with {friendName}🗨️
         </ArgonTypography>
 
         {/* Chat message area */}

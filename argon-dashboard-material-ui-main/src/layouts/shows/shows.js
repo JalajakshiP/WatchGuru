@@ -6,7 +6,6 @@ import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import MovieCard from "components/ScreenCards/moviecard"; // import your updated card
 import { apiUrl } from "config/config";
-
 function ShowList() {
   const [recommendedShows, setRecommendedShows] = useState([]);
     const [otherShows, setOtherShows] = useState([]);

@@ -50,7 +50,7 @@ function Header({ tabValue, setTabValue }) {
 
   return (
     <ArgonBox position="relative">
-      <DashboardNavbar absolute light />
+      <DashboardNavbar  absolute light showSearch={false} />
       <ArgonBox height="220px" />
       <Card
         sx={{

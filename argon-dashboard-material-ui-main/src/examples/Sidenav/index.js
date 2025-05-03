@@ -69,8 +69,21 @@ function Sidenav({ color, brand, brandName, routes, ...rest }) {
     return () => window.removeEventListener("resize", handleMiniSidenav);
   }, [dispatch, location]);
 
-  const allowedRoutes = ["Friends", "Chats", "Shows", "Anime", "Movies", "Profile", "Logout", "Dashboard","GroupRecommendation", "Favourites", "MyList", "Watched", "Liked","Forum"];
-
+  const allowedRoutes = [
+    "Dashboard",          // Primary navigation
+    "Movies",             // Main content categories
+    "Shows",
+    "Anime",
+    "GroupRecommendation", // Recommendations
+    "Favourites",         // User collections
+    "MyList",
+    "Watched",
+    "Forum",              // Community features
+    "Friends",
+    "Chats",
+    "Profile",            // User account
+    "Logout"              // Always last
+  ];
   // Render all the routes from the routes.js (All the visible items on the Sidenav)
   const renderRoutes = routes
   .filter((route) => allowedRoutes.includes(route.name)).map(({ type, name, icon, title, key, href, route, noCollapse }) => {

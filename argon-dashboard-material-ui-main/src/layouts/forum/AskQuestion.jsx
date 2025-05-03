@@ -60,7 +60,7 @@ function AskQuestion() {
 
   return (
     <DashboardLayout>
-      <DashboardNavbar />
+      <DashboardNavbar  showSearch={false}/>
       <Box sx={{ 
         display: 'flex', 
         justifyContent: 'center',
@@ -74,7 +74,7 @@ function AskQuestion() {
           borderRadius: 2
         }}>
           <Stack direction="row" alignItems="center" spacing={1} mb={3}>
-            <QuestionAnswerIcon color="primary" fontSize="large" />
+            <QuestionAnswerIcon color="secondary" fontSize="large" />
             <Typography variant="h4" component="h1">
               Ask a Question
             </Typography>

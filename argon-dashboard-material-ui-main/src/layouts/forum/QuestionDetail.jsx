@@ -4,11 +4,11 @@ import {
   TextField, Button, Avatar, Divider,
   CircularProgress, IconButton, Chip
 } from '@mui/material';
-
 import { Link, useParams } from 'react-router-dom';
 import { apiUrl } from 'config/config';
 import ThumbUpIcon from '@mui/icons-material/ThumbUp';
 import ThumbDownIcon from '@mui/icons-material/ThumbDown';
+import AndroidIcon from '@mui/icons-material/Android'; // Robot icon
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 
@@ -117,106 +117,138 @@ function QuestionDetail() {
   }
 
   return (   
-     <DashboardLayout>
-            <DashboardNavbar />
-    <Box sx={{ p: 3 }}>
-      <Card elevation={3} sx={{ mb: 3 }}>
-        <CardContent>
-          <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
-            <Avatar src={question.profile_picture} alt={question.username} />
-            <Typography variant="subtitle1">{question.username}</Typography>
-          </Box>
-          
-          <Typography variant="h5" gutterBottom>
-            {question.title}
-          </Typography>
-          
-          <Typography variant="body1" paragraph>
-            {question.body}
-          </Typography>
-          
-          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 1 }}>
-            {question.tags?.map((tag, index) => (
-              <Chip key={index} label={tag} size="small" />
-            ))}
-          </Box>
-          
-          <Typography variant="caption" color="textSecondary">
-            Asked on {new Date(question.created_at).toLocaleDateString()}
-          </Typography>
-        </CardContent>
-      </Card>
-      
-      <Typography variant="h6" gutterBottom sx={{ mt: 4 }}>
-        {answers.length} Answers
-      </Typography>
-      
-      <Divider sx={{ my: 2 }} />
-      
-      {answers.map((answer) => (
-        <Box key={answer.answer_id} sx={{ mb: 3 }}>
-          <Box sx={{ display: 'flex', gap: 2 }}>
-            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 60 }}>
-              <IconButton onClick={() => handleVote(answer.answer_id, 1)}>
-                <ThumbUpIcon fontSize="small" />
-              </IconButton>
-              <Typography variant="subtitle1">{answer.votes || 0}</Typography>
-              <IconButton onClick={() => handleVote(answer.answer_id, -1)}>
-                <ThumbDownIcon fontSize="small" />
-              </IconButton>
+    <DashboardLayout>
+      <DashboardNavbar showSearch={false}/>
+      <Box sx={{ p: 3 }}>
+        <Card elevation={3} sx={{ mb: 3 }}>
+          <CardContent>
+            <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+              <Avatar src={question.profile_picture} alt={question.username} />
+              <Typography variant="subtitle1">{question.username}</Typography>
             </Box>
             
-            <Card variant="outlined" sx={{ flexGrow: 1 }}>
-              <CardContent>
-                <Box sx={{ display: 'flex', gap: 2, mb: 1 }}>
-                  <Avatar 
-                    src={answer.profile_picture} 
-                    alt={answer.username}
-                    sx={{ width: 32, height: 32 }}
-                  />
-                  <Typography variant="subtitle2">
-                    {answer.is_bot ? 'MovieBot' : answer.username}
+            <Typography variant="h5" gutterBottom>
+              {question.title}
+            </Typography>
+            
+            <Typography variant="body1" paragraph>
+              {question.body}
+            </Typography>
+            
+            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 1 }}>
+              {question.tags?.map((tag, index) => (
+                <Chip key={index} label={tag} size="small" />
+              ))}
+            </Box>
+            
+            <Typography variant="caption" color="textSecondary">
+              Asked on {new Date(question.created_at).toLocaleDateString()}
+            </Typography>
+          </CardContent>
+        </Card>
+        
+        <Typography variant="h6" gutterBottom sx={{ mt: 4 }}>
+          {answers.length} Answers
+        </Typography>
+        
+        <Divider sx={{ my: 2 }} />
+        
+        {answers.map((answer) => (
+          <Box key={answer.answer_id} sx={{ mb: 3 }}>
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 60 }}>
+                <IconButton onClick={() => handleVote(answer.answer_id, 1)}>
+                  <ThumbUpIcon fontSize="small" />
+                </IconButton>
+                <Typography variant="subtitle1">{answer.votes || 0}</Typography>
+                <IconButton onClick={() => handleVote(answer.answer_id, -1)}>
+                  <ThumbDownIcon fontSize="small" />
+                </IconButton>
+              </Box>
+              
+              <Card variant="outlined" sx={{ 
+                flexGrow: 1,
+                borderLeft: answer.is_bot ? '4px solid #4caf50' : '4px solid transparent'
+              }}>
+                <CardContent>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
+                    {answer.is_bot ? (
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Avatar
+                          sx={{
+                            width: 32,
+                            height: 32,
+                            bgcolor: '#4caf50',
+                            color: 'white'
+                          }}
+                        >
+                          <AndroidIcon fontSize="small" />
+                        </Avatar>
+                        <Box>
+                          <Typography variant="subtitle2">WatchGuruBot</Typography>
+                          <Chip 
+                            label="AI Assistant" 
+                            size="small" 
+                            sx={{ 
+                              height: 16,
+                              fontSize: '0.6rem',
+                              bgcolor: 'primary.light',
+                              color: 'white'
+                            }} 
+                          />
+                        </Box>
+                      </Box>
+                    ) : (
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Avatar 
+                          src={answer.profile_picture} 
+                          alt={answer.username}
+                          sx={{ width: 32, height: 32 }}
+                        />
+                        <Typography variant="subtitle2">
+                          {answer.username}
+                        </Typography>
+                      </Box>
+                    )}
+                  </Box>
+                  
+                  <Typography variant="body1" sx={{ whiteSpace: 'pre-line' }}>
+                    {answer.body}
                   </Typography>
-                </Box>
-                
-                <Typography variant="body1" sx={{ whiteSpace: 'pre-line' }}>
-                  {answer.body}
-                </Typography>
-                
-                <Typography variant="caption" color="textSecondary" display="block" sx={{ mt: 1 }}>
-                  Answered on {new Date(answer.created_at).toLocaleDateString()}
-                </Typography>
-              </CardContent>
-            </Card>
+                  
+                  <Typography variant="caption" color="textSecondary" display="block" sx={{ mt: 1 }}>
+                    Answered on {new Date(answer.created_at).toLocaleDateString()}
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Box>
           </Box>
-        </Box>
-      ))}
-      
-      <Typography variant="h6" gutterBottom sx={{ mt: 4 }}>
-        Your Answer
-      </Typography>
-      
-      <TextField
-        fullWidth
-        multiline
-        rows={4}
-        variant="outlined"
-        placeholder="Write your answer here..."
-        value={answerText}
-        onChange={(e) => setAnswerText(e.target.value)}
-        sx={{ mb: 2 }}
-      />
-      
-      <Button 
-        variant="contained" 
-        onClick={handleSubmitAnswer}
-        disabled={!answerText.trim()}
-      >
-        Post Answer
-      </Button>
-    </Box>
+        ))}
+        
+        <Typography variant="h6" gutterBottom sx={{ mt: 4 }}>
+          Your Answer
+        </Typography>
+        
+        <TextField
+          fullWidth
+          multiline
+          rows={4}
+          variant="outlined"
+          placeholder="Write your answer here..."
+          value={answerText}
+          onChange={(e) => setAnswerText(e.target.value)}
+          sx={{ mb: 2 }}
+        />
+        
+        <Button 
+          variant="contained" 
+          onClick={handleSubmitAnswer}
+          disabled={!answerText.trim()}
+        >
+          Post Answer
+        </Button>
+      </Box>
     </DashboardLayout>
-
   );
 }
 

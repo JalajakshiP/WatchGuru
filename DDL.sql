@@ -160,3 +160,11 @@ value INTEGER CHECK (value IN (-1, 1)),
 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 UNIQUE (answer_id, user_id)
 );
+-- Add to your database initialization script
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM users WHERE user_id = 0) THEN
+    INSERT INTO users (user_id, username, email, password_hash, date_of_birth, is_kid_friendly)
+    VALUES (0, 'WatchGuruBot', 'bot@watchguru.com', '', '2000-01-01', true);
+  END IF;
+END $$;

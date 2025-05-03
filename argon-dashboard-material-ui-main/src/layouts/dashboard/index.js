@@ -147,7 +147,7 @@ function Dashboard() {
               cursor: "pointer",
             }}
           >
-            Filter
+            Apply Filter🗃️
           </Button>
           <Popover
             open={popoverOpen}

@@ -75,12 +75,12 @@ function ListContent() {
       <DashboardNavbar setSearchQuery={setSearchQuery} />
       <ArgonBox py={3} px={2} sx={{ backgroundColor: "#ffffff", minHeight: "100vh" }}>
         <ArgonTypography variant="h3" color="black" mb={4}>
-          Your List Content
+           Watchlist📃
         </ArgonTypography>
 
         {nothing ? (<Box textAlign="center" mt={6}>
           <img
-            src="https://media.giphy.com/media/xT9IgG50Fb7Mi0prBC/giphy.gif"
+            src="https://media.giphy.com/media/hhqLxYqC260vPlMPXI/giphy.gif"
             alt="Nothing Watched"
             style={{ width: "300px", maxWidth: "100%" }}
           />
@@ -88,9 +88,9 @@ function ListContent() {
             Looks like you haven’t added anything to watch yet... Time to binge!
           </ArgonTypography>
         </Box>) : (<>
-          {renderSection("List Animes", listAnimes)}
-          {renderSection("List Movies", listMovies)}
-          {renderSection("List Shows & Dramas", listShows)}
+          {renderSection(" Animes", listAnimes)}
+          {renderSection(" Movies", listMovies)}
+          {renderSection(" Shows & Dramas", listShows)}
         </>
         )}
       </ArgonBox>

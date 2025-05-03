@@ -10,6 +10,8 @@ const math = require("mathjs");
 // const schedule = require("node-schedule");
 
 const port = 4000;
+const { spawn } = require('child_process');
+const path = require('path');
 
 // PostgreSQL connection
 // NOTE: use YOUR postgres username and password here
@@ -23,6 +25,7 @@ const pool = new Pool({
 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.json());
+
 
 // CORS: Give permission to localhost:3000 (ie our React app)
 // to use this backend API
@@ -1339,6 +1342,31 @@ app.post("/send-friend-request", isAuthenticated, async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 });
+app.post("/cancel-friend-request", isAuthenticated, async (req, res) => {
+  try {
+    const { friendId } = req.body;
+    const userId = req.session.userId;
+
+    const result = await pool.query(
+      `DELETE FROM friends 
+       WHERE user_id = $1 AND friend_id = $2 AND status = 'pending'`,
+      [userId, friendId]
+    );
+    await pool.query(
+      `DELETE FROM notifications
+       WHERE user_id = $1 AND type = 'friend_request' AND from_user = $2`,
+      [friendId, userId]
+    );
+    if (result.rowCount === 0) {
+      return res.status(400).json({ message: "No pending request to cancel" });
+    }
+
+    res.status(200).json({ message: "Friend request cancelled" });
+  } catch (error) {
+    console.error("Error cancelling friend request:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
 
 // Respond to Friend Request
 app.post("/respond-friend-request", isAuthenticated, async (req, res) => {
@@ -2051,7 +2079,38 @@ app.get('/friend/:id/reviews', async (req, res) => {
     res.status(500).json({ error: 'Error fetching reviews' });
   }
 });
-// Questions API
+
+
+async function generateBotRecommendations(title, description, genres) {
+  console.log("Generating bot recommendations...");
+  console.log("Title:", title);
+  console.log("Description:", description);
+  console.log("Genres:", genres);
+  return new Promise((resolve, reject) => {
+    const scriptPath = path.join(__dirname, 'bot_recom.py');
+    const process = spawn('python', [scriptPath, title, description, JSON.stringify(genres)]);
+
+    let output = '';
+    let errorOutput = '';
+
+    process.stdout.on('data', (data) => {
+      output += data.toString();
+    });
+
+    process.stderr.on('data', (data) => {
+      errorOutput += data.toString();
+    });
+
+    process.on('close', (code) => {
+      if (code === 0) {
+        resolve(output.trim());
+      } else {
+        reject(new Error(`Python script error:\n${errorOutput}`));
+      }
+    });
+  });
+}
+
 app.post('/questions', isAuthenticated, async (req, res) => {
   try {
     const { title, body, tags } = req.body;
@@ -2061,31 +2120,42 @@ app.post('/questions', isAuthenticated, async (req, res) => {
       return res.status(400).json({ message: "Title and body are required" });
     }
 
-    const result = await pool.query(
+    // Insert question
+    const questionResult = await pool.query(
       `INSERT INTO questions (user_id, title, body, tags)
        VALUES ($1, $2, $3, $4)
        RETURNING *`,
       [userId, title, body, tags || []]
     );
 
-    // Get bot response if question is about recommendations
-    // if (title.toLowerCase().includes('recommend') || body.toLowerCase().includes('recommend')) {
-    //   const botResponse = await generateBotRecommendations(title + " " + body);
-      
-    //   await pool.query(
-    //     `INSERT INTO answers (question_id, user_id, body, is_bot)
-    //      VALUES ($1, $2, $3, true)`,
-    //     [result.rows[0].question_id, 0, botResponse]
-    //   );
-    // }
+    // Generate bot response
+    const botResponse = await generateBotRecommendations(title, body, tags || []);
+     
+    // Insert bot answer with fallback
+    try {
+      await pool.query(
+        `INSERT INTO answers (question_id, user_id, body, is_bot)
+         VALUES ($1, 0, $2, true)`,
+        [questionResult.rows[0].question_id, botResponse]
+      );
+    } catch (err) {
+      if (err.code === '23503') { // Foreign key violation
+        await pool.query(
+          `INSERT INTO answers (question_id, body, is_bot)
+           VALUES ($1, $2, true)`,
+          [questionResult.rows[0].question_id, botResponse]
+        );
+      } else {
+        throw err;
+      }
+    }
 
-    res.status(201).json(result.rows[0]);
+    res.status(201).json(questionResult.rows[0]);
   } catch (error) {
-    console.error("Error creating question:", error);
+    console.error("Error in /questions:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 });
-
 // Get all questions
 app.get('/questions', async (req, res) => {
     console.log("Received question:", req.body); // Add this log

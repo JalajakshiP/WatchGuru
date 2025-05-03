@@ -9,7 +9,7 @@ import {
 import SearchIcon from '@mui/icons-material/Search';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import CheckIcon from '@mui/icons-material/Check';
-import ClearIcon from '@mui/icons-material/Clear';
+import HighlightOffIcon from '@mui/icons-material/HighlightOff';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { apiUrl } from "config/config";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
@@ -286,7 +286,7 @@ const Friends = () => {
 
   return (
     <DashboardLayout>
-      <DashboardNavbar />
+      <DashboardNavbar  showSearch={false} />
       <Card sx={{ p: 3 }}>
         {/* Search Bar */}
         <Box mb={3}>
@@ -429,8 +429,9 @@ const Friends = () => {
                                     size="small" 
                                     variant="outlined" 
                                     color="error"
-                                    startIcon={<ClearIcon />}
+                                    startIcon={<HighlightOffIcon />}
                                     onClick={() => handleRespondRequest(request.user_id, false)}
+                                    sx={{ color: "#000000", borderColor: "#d63031" }}
                                   >
                                     Decline
                                   </Button>
@@ -470,8 +471,9 @@ const Friends = () => {
                                 <Button 
                                   size="small" 
                                   variant="outlined" 
-                                  color="secondary"
+                                  color="primary"
                                   onClick={() => handleCancelRequest(request.user_id)}
+                                  sx={{ color: "#000000", borderColor: "#6c5ce7" }}
                                 >
                                   Cancel Request
                                 </Button>

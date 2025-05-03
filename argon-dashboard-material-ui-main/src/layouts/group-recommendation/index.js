@@ -11,6 +11,7 @@ import { apiUrl } from "config/config";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import MovieCard from "components/ScreenCards/moviecard";
+import bgImage from "assets/images/background_images/6.jpg";
 
 const GroupRecommendation = () => {
   const [friends, setFriends] = useState([]);
@@ -117,8 +118,17 @@ const GroupRecommendation = () => {
   };
 
   return (
-    <DashboardLayout>
-      <DashboardNavbar />
+    <DashboardLayout
+    sx={{
+      backgroundImage: ({ functions: { rgba, linearGradient }, palette: { gradients } }) =>
+        `${linearGradient(
+          rgba(gradients.info.main, 0.1),
+          rgba(gradients.info.state, 0.1)
+        )}, url(${bgImage})`,
+        backgroundPosition: "center",
+        // backgroundSize: "contain",    // ✅ ensures the whole image fits
+    }}>
+      <DashboardNavbar  showSearch={false}/>
       <Box sx={{ 
         mt: 4, p: 3,
         background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
@@ -165,7 +175,7 @@ const GroupRecommendation = () => {
                           sx={{ 
                             width: 48, height: 48,
                             border: selectedFriends.includes(friend.user_id) 
-                              ? '2px solid #3f51b5' : '2px solid transparent'
+                              ? '2px solidrgb(0, 11, 70)' : '2px solid transparent'
                           }}
                         />
                       </ListItemAvatar>

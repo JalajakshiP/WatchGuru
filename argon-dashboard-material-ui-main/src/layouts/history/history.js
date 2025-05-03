@@ -80,13 +80,13 @@ function WatchedContent() {
       <DashboardNavbar setSearchQuery={setSearchQuery} />
       <ArgonBox py={3} px={2} sx={{ backgroundColor: "#ffffff", minHeight: "100vh" }}>
         <ArgonTypography variant="h3" color="black" mb={4}>
-          Your Watched Content
+          Previously Watched⌛
         </ArgonTypography>
 
         {nothingWatched ? (
           <Box textAlign="center" mt={6}>
             <img
-              src="https://media.giphy.com/media/xT9IgG50Fb7Mi0prBC/giphy.gif"
+              src="https://media.giphy.com/media/hhqLxYqC260vPlMPXI/giphy.gif"
               alt="Nothing Watched"
               style={{ width: "300px", maxWidth: "100%" }}
             />
