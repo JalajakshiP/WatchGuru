@@ -139,6 +139,9 @@ const navigate = useNavigate();
     } else if (notif.type === "friend_request" || notif.type === "friend_accept") {
       window.location.href = `/friends`;
     }
+    else if (notif.type === "movie_shared"){
+      navigate (`/movie/${notif.movie_id}`);
+    }
     setNotifications((prev) => prev.filter((n) => n.id !== notif.id));
   }
   catch (error) {

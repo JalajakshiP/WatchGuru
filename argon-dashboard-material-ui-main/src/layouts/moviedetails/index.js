@@ -23,6 +23,9 @@ function MovieDetails() {
   const [ratingAvg, setRatingAvg] = useState(null);
   const [userId, setUserId] = useState(null);
   const navigate = useNavigate();
+  const [friendList, setFriendList] = useState([]);
+  const [selectedFriends, setSelectedFriends] = useState([]);
+  const [showFriendModal, setShowFriendModal] = useState(false);
 
   useEffect(() => {
     console.log("Fetching details for movie ID:", id); // Should log "4"
@@ -79,9 +82,53 @@ function MovieDetails() {
       }
     };
 
+    const fetchFriends = async () => {
+      try {
+        const res = await fetch(`${apiUrl}/friends`, {
+          credentials: "include",
+        });
+        const data = await res.json();
+        setFriendList(data.friends || []);
+      } catch (error) {
+        console.error("Error fetching friends:", error);
+      }
+    };
     fetchMovieDetails();
+    fetchFriends();
   }, [id]);
+  const shareWithFriends = async () => {
+    if (selectedFriends.length === 0) return;
+  
+    console.log("Selected Friends:", selectedFriends);
+    console.log("Content ID:", id);
+    console.log("Notify API:", `${apiUrl}/notify-friends`);
 
+
+    try {
+      const res = await fetch(`${apiUrl}/notify-friends`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          content_id: id,
+          friend_ids: selectedFriends,
+        }),
+      });
+  
+      if (res.ok) {
+        alert("Friends notified!");
+        setShowFriendModal(false);
+        setSelectedFriends([]);
+      } else {
+        const errorData = await res.json();
+        console.error("Notification error:", errorData);
+        alert("Failed to notify friends.");
+      }
+    } catch (err) {
+      console.error("Error sharing:", err);
+    }
+  };
+  
   const submitReview = async () => {
     if (userRating === 0 || reviewText.trim() === "") {
       alert("Please provide a rating and review text.");
@@ -250,7 +297,115 @@ function MovieDetails() {
                 </Grid>
             </Grid>
           </Box>
-          
+            <Button
+            variant="outlined"
+            sx={{
+              ml: 2,
+              color: "#1976d2",            // Text color
+              borderColor: "#1976d2",      // Border color
+              '&:hover': {
+                backgroundColor: "#e3f2fd", // Light blue background on hover
+                borderColor: "#1565c0",
+                color: "#1565c0"
+              }
+            }}
+            onClick={() => setShowFriendModal(true)}
+          >
+            Share with Friends
+          </Button>
+          {showFriendModal && (
+            <Box
+            sx={{
+              position: "fixed",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              backgroundColor: "#ffffff", // Ensures entire modal has white background
+              color: "#000000", // Text color set to black for visibility
+              p: 4,
+              borderRadius: 2,
+              boxShadow: 24,
+              zIndex: 2000,
+              width: 400,
+              maxHeight: '80vh', // Optional: limit max height if you have many friends
+              overflowY: 'auto', // Enable scrolling when content exceeds height
+            }}
+          >
+            <Typography variant="h6" mb={2}>
+              Select Friends to Notify
+            </Typography>
+
+              {/* Select All / Deselect All Button */}
+              <Button
+                variant="outlined"
+                color="primary"
+                onClick={() => {
+                  if (selectedFriends.length === friendList.length) {
+                    setSelectedFriends([]); // Deselect all
+                  } else {
+                    setSelectedFriends(friendList.map(f => f.user_id)); // Select all
+                  }
+                }}
+                sx={{
+                  mb: 2,
+                  backgroundColor: selectedFriends.length === friendList.length ? "#4CAF50" : "transparent", // Green for select all, transparent for deselect all
+                  borderColor: selectedFriends.length === friendList.length ? "#4CAF50" : "#B0BEC5", // Green border for select all, light grey for deselect all
+                  color: selectedFriends.length === friendList.length ? "white" : "#333", // White text for select all, darker gray text for deselect all
+                  fontWeight: 600, // Bold text for better visibility
+                  '&:hover': {
+                    backgroundColor: selectedFriends.length === friendList.length ? "#d32f2f" : "#f5f5f5", // Darker green for hover on select all, light grey for deselect all
+                    borderColor: selectedFriends.length === friendList.length ? "#c62828" : "#B0BEC5",
+                    color: selectedFriends.length === friendList.length ? "white" : "#333", // Ensure proper hover text color
+                  }
+                }}
+              >
+                {selectedFriends.length === friendList.length ? "Deselect All" : "Select All"}
+              </Button>
+
+              {/* Friend Buttons */}
+              <Box sx={{ mb: 2, display: "flex", flexWrap: "wrap", gap: 1 }}>
+                {friendList.map((friend) => {
+                  const isSelected = selectedFriends.includes(friend.user_id);
+                  return (
+                    <Button
+                      key={friend.user_id}
+                      variant={isSelected ? "contained" : "outlined"} // Contained when selected, outlined otherwise
+                      sx={{
+                        borderRadius: 1,
+                        padding: "8px 16px",
+                        minWidth: "120px",
+                        color: "black", // Text color is always black, whether selected or not
+                        backgroundColor: isSelected ? "#4CAF50" : "transparent", // Green background when selected
+                        fontWeight: 600, // Optional: Make the text bolder for better visibility
+                        borderColor: isSelected ? "#4CAF50" : "#B0BEC5", // Light grey border when unselected, green for selected
+                      }}
+                      onClick={() => {
+                        setSelectedFriends((prev) =>
+                          isSelected
+                            ? prev.filter((id) => id !== friend.user_id)
+                            : [...prev, friend.user_id]
+                        );
+                      }}
+                    >
+                      <Typography sx={{ color: isSelected ? "white" : "#333" }}> {/* White text when selected, black when not */}
+                        {friend.username}
+                      </Typography>
+                    </Button>
+                  );
+                })}
+              </Box>
+
+
+              {/* Action Buttons */}
+              <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 2 }}>
+                <Button onClick={() => setShowFriendModal(false)}>Cancel</Button>
+                <Button variant="contained" onClick={shareWithFriends}>
+                  Notify
+                </Button>
+              </Box>
+            </Box>
+          )}
+
           {/* Reviews */}
           <Button onClick={() => setShowReviewForm((prev) => !prev)}>
             {showReviewForm ? "Cancel" : "Give a rating?"}

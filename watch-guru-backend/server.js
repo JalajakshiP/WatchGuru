@@ -17,7 +17,7 @@ const pool = new Pool({
   user: 'postgres',
   host: 'localhost',
   database: 'watchguru',
-  password: 'chocolate',
+  password: '12345678',
   port: 5432,
 });
 
@@ -483,7 +483,7 @@ app.get("/recommendations", isAuthenticated, async (req, res) => {
 
     // Query for exploreMore (everything else from the content table)
     const { rows: exploreMore } = await pool.query(
-      `SELECT content_id, title, poster_url, genre ,EXISTS (
+      `SELECT DISTINCT on (title) content_id, title, language, poster_url, genre, "cast", EXISTS (
     SELECT 1 
     FROM likes 
     WHERE user_id = $1 AND content_id = content.content_id
@@ -1940,3 +1940,48 @@ app.get("/history", async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 });
+  app.post("/notify-friends", async (req, res) => {
+    const userId = req.session.userId;
+    if (!userId) {
+      return res.status(401).json({ error: "User not authenticated." });
+    }
+    console.log("notify-friends endpoint hit");
+  
+    const { content_id, friend_ids } = req.body;
+    if (!content_id || !Array.isArray(friend_ids) || friend_ids.length === 0) {
+      return res.status(400).json({ error: "Missing content_id or friend_ids" });
+    }
+  
+    try {
+      // Get movie title
+      const contentResult = await pool.query(
+        `SELECT title FROM content WHERE content_id = $1`,
+        [content_id]
+      );
+      const movieTitle = contentResult.rows[0]?.title || "a movie";
+  
+      // Get sender username
+      const userResult = await pool.query(
+        `SELECT username FROM users WHERE user_id = $1`,
+        [userId]
+      );
+      const senderName = userResult.rows[0]?.username || "Someone";
+  
+      // Prepare message
+      const notificationText = `${senderName} shared the movie "${movieTitle}" with you.`;
+  
+      for (const friendId of friend_ids) {
+        console.log("friendId:", friendId, "userId:", userId, "notificationText:", notificationText);
+        await pool.query(
+          `INSERT INTO notifications (user_id, type, from_user, content, movie_id)
+           VALUES ($1, 'movie_shared', $2, $3, $4)`,
+          [friendId, userId, notificationText, content_id]
+        );
+      }
+  
+      res.status(200).json({ message: "Notifications sent successfully." });
+    } catch (err) {
+      console.error("Error sending notifications:", err);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });

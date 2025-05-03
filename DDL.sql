@@ -70,12 +70,13 @@ CREATE TABLE Reviews (
 );
 -- reviews
 
-CREATE TABLE notifications (
+CREATE TABLE IF NOT EXISTS  notifications (
   id SERIAL PRIMARY KEY,
   user_id INTEGER NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
-  type TEXT NOT NULL CHECK (type IN ('friend_request', 'friend_accept', 'message')),
+  type TEXT NOT NULL CHECK (type IN ('friend_request', 'friend_accept', 'message', 'movie_shared')),
   from_user INTEGER REFERENCES users(user_id) ON DELETE SET NULL,
   content TEXT,
+  movie_id INTEGER DEFAULT NULL REFERENCES content(content_id) ON DELETE CASCADE,
   created_at TIMESTAMP DEFAULT NOW(),
   is_read BOOLEAN DEFAULT FALSE
 );
