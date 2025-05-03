@@ -1,6 +1,6 @@
 import React from 'react';
 import { useState, useEffect } from "react";
-
+import { useNavigate } from "react-router-dom";
 // react-router components
 import { useLocation, Link } from "react-router-dom";
 
@@ -53,7 +53,7 @@ function DashboardNavbar({ absolute, light, isMini, setSearchQuery }) {
   const { miniSidenav, transparentNavbar, fixedNavbar, openConfigurator } = controller;
   const [openMenu, setOpenMenu] = useState(false);
   const route = useLocation().pathname.split("/").slice(1);
-
+const navigate = useNavigate();
   const [searchText, setSearchText] = useState("");
   const [notifications, setNotifications] = useState([]);
 
@@ -128,7 +128,13 @@ function DashboardNavbar({ absolute, light, isMini, setSearchQuery }) {
     });
     handleCloseMenu();
     if (notif.type === "message") {
-      window.location.href = `/chats`;
+      // window.location.href = `/chats`;
+      navigate("/Chatting", {
+        state: {
+          friendId: notif.from_user,
+          friendName: notif.from_username,
+        },
+      })
       // messages?friendId=${notif.from_user}`;
     } else if (notif.type === "friend_request" || notif.type === "friend_accept") {
       window.location.href = `/friends`;
