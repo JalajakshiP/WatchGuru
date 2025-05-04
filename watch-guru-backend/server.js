@@ -1741,7 +1741,7 @@ app.get("/notifications", isAuthenticated, async (req, res) => {
     const userId = userResult.rows[0].user_id;
     const notificationsQuery = `
       SELECT n.id, n.type, n.content, n.created_at, n.is_read, n.from_user,
-             u.username AS from_username
+             u.username AS from_username, n.movie_id
       FROM notifications n
       LEFT JOIN users u ON n.from_user = u.user_id
       WHERE n.user_id = $1 AND n.is_read = false
