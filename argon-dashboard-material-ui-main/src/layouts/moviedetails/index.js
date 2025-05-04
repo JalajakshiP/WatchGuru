@@ -20,8 +20,9 @@ function MovieDetails() {
   const [userRating, setUserRating] = useState(0);
   const [reviewText, setReviewText] = useState("");
   const [reviews, setReviews] = useState([]);
-  const [ratingAvg, setRatingAvg] = useState(null);
+  const [userReview, setUserReview] = useState(null);
   const [userId, setUserId] = useState(null);
+  const [userRatingAvg, setRatingAvg] = useState(0);
   const navigate = useNavigate();
   const [friendList, setFriendList] = useState([]);
   const [selectedFriends, setSelectedFriends] = useState([]);
@@ -82,6 +83,37 @@ function MovieDetails() {
       }
     };
 
+    const fetchUserReview = async () => {
+      try {
+        const response = await fetch(`${apiUrl}/reviews/edit/${id}`, {
+          method: "GET",
+          credentials: "include",
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+    
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        setUserReview(false);
+        setUserRating(0);
+        setReviewText("");
+        const review = await response.json();
+        
+        if (review) {
+          setUserReview(review);
+          setUserRating(review.rating);
+          setReviewText(review.review_text);
+        }
+      } catch (error) {
+        console.error("Fetch error:", error);
+        setError(error.message);
+      }
+    };    
+    
+
     const fetchFriends = async () => {
       try {
         const res = await fetch(`${apiUrl}/friends`, {
@@ -94,6 +126,7 @@ function MovieDetails() {
       }
     };
     fetchMovieDetails();
+    fetchUserReview();
     fetchFriends();
   }, [id]);
   const shareWithFriends = async () => {
@@ -134,37 +167,71 @@ function MovieDetails() {
       alert("Please provide a rating and review text.");
       return;
     }
-
+  
     const reviewData = {
-      content_id: id,
       rating: userRating,
       review_text: reviewText,
     };
-
+  
     try {
-      const response = await fetch(`${apiUrl}/reviews`, {
-        method: "POST",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(reviewData),
-      });
-
-      if (response.ok) {
-        const newReview = await response.json();
-        setReviews([newReview, ...reviews]);
-        setShowReviewForm(false);
-        setReviewText("");
-        setUserRating(0);
-        // Optionally, update the content's rating_avg if needed here
+      if (userReview) {
+        // Update existing review
+        const response = await fetch(`${apiUrl}/reviews/${userReview.review_id}`, {
+          method: "PUT",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            rating: userRating,
+            review_text: reviewText,
+          }),
+        });
+  
+        if (response.ok) {
+          const updatedReview = await response.json();
+          // Update review in the list
+          setReviews((prevReviews) =>
+            prevReviews.map((rev) =>
+              rev.review_id === updatedReview.review_id ? updatedReview : rev
+            )
+          );
+          setUserReview(updatedReview);
+          setShowReviewForm(false);
+        } else {
+          alert("Failed to update review.");
+        }
       } else {
-        alert("Failed to submit review.");
+        // Create new review
+        const response = await fetch(`${apiUrl}/reviews`, {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            ...reviewData,
+            content_id: id,
+          }),
+        });
+  
+        if (response.ok) {
+          const newReview = await response.json();
+          setReviews([newReview, ...reviews]);
+          setUserReview(newReview);
+          setShowReviewForm(false);
+          setReviewText("");
+          setUserRating(0);
+        } else {
+          alert("Failed to submit review.");
+        }
       }
     } catch (error) {
       console.error("Error submitting review:", error);
+      alert("Something went wrong.");
     }
   };
+  
 
   if (loading) {
     return (
@@ -407,8 +474,12 @@ function MovieDetails() {
           )}
 
           {/* Reviews */}
-          <Button onClick={() => setShowReviewForm((prev) => !prev)}>
-            {showReviewForm ? "Cancel" : "Give a rating?"}
+          <Button onClick={() => setShowReviewForm(prev => !prev)}>
+            {showReviewForm
+              ? "Cancel"
+              : userReview
+              ? "Edit Your Rating"
+              : "Give a Rating?"}
           </Button>
 
           {showReviewForm && (
@@ -435,10 +506,11 @@ function MovieDetails() {
                 onClick={submitReview}
                 sx={{ mt: 2 }}
               >
-                Submit Review
+                {userReview ? "Update Review" : "Submit Review"}
               </Button>
             </Box>
           )}
+
 
           {/* Display Existing Reviews */}
           <Box mt={4}>

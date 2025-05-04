@@ -19,7 +19,7 @@ const pool = new Pool({
   user: 'postgres',
   host: 'localhost',
   database: 'watchguru',
-  password: 'chocolate',
+  password: 'Mahakkidata',
   port: 5432,
 });
 
@@ -1707,6 +1707,26 @@ app.post("/reviews", isAuthenticated, async (req, res) => {
     );
 
     res.status(200).json(result.rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET: Check if a review exists for a specific content by the user
+app.get("/reviews/edit/:content_id", isAuthenticated, async (req, res) => {
+  const { content_id} = req.params;
+  user_id = req.session.userId;
+
+  try {
+    const result = await pool.query(
+      `SELECT * FROM Reviews WHERE content_id = $1 AND user_id = $2`,
+      [content_id, user_id]
+    );
+    if (result.rows.length > 0) {
+      res.status(200).json(result.rows[0]); // Return existing review
+    } else {
+      res.status(200).json(null); // No review yet
+    }
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
