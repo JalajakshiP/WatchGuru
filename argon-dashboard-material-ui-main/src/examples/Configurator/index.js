@@ -56,7 +56,7 @@ function Configurator() {
   };
 
   return (
-    <ConfiguratorRoot variant="permanent" ownerState={{ openConfigurator }}>
+    <ConfiguratorRoot variant="permanent" ownerState={{ openConfigurator }} >
       <ArgonBox
         display="flex"
         justifyContent="space-between"
@@ -82,11 +82,6 @@ function Configurator() {
         </Icon>
       </ArgonBox>
 
-      <Divider />
-      <Grid item xs={12} md={6} xl={4}>
-            <PlatformSettings />
-      </Grid>
-      <Divider />
       <ArgonBox pt={1.25} pb={3} px={3}>
         <ArgonTypography variant="h6">Choose a Mode</ArgonTypography>
         <Divider />
