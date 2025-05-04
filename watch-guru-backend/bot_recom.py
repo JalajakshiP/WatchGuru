@@ -48,7 +48,7 @@ class RecommendationEngine:
             meta = match["metadata"]
             output.append(
                 f"{i}. {meta['title']} "
-                f"   - Genre: {meta['genre']}\n"
+                f"   - Genre: {meta['genres']}\n"
                 f"   - Director: {meta['director']}\n"
                 f"   - Language: {meta['language']}\n"
             )
