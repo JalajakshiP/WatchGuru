@@ -1,6 +1,6 @@
 # 🎬 WatchGuru
 
-**A shared rating and recommendation platform for movies, dramas, and anime.**
+**A shared rating and recommendation platform for movies, shows, and anime.**
 
 ![WatchGuru Banner](https://github.com/user-attachments/assets/39d71501-1183-4fe4-a65c-9d36816cddfc)  
 
