@@ -262,7 +262,7 @@ function Dashboard() {
                     rating={movie.rating || movie.score}
                     liked={movie.liked}
                     inWatchlist={movie.inwatchlist}
-                    history={movie.history}
+                    watched={movie.watched}
                     type={section.type}
                   />
                 </Grid>
@@ -288,7 +288,7 @@ function Dashboard() {
                     type="explore"
                     liked={movie.liked}
                     inWatchlist={movie.inwatchlist}
-                    history={movie.history}
+                    watched={movie.watched}
                   />
 
 
