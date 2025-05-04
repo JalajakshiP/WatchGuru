@@ -9,7 +9,6 @@ WatchGuru is an **entertainment-focused platform** designed to help users discov
 
 - 
 ## 🎯 Project Setup
-### Prerequisites
 - [Node.js](https://nodejs.org/en/)
 - [PostgreSQL](https://www.postgresql.org/)
 
