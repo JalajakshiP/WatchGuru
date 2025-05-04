@@ -54,7 +54,14 @@ function Cover() {
       alert("Please fill all fields.");
       return;
     }
-  
+    const minDate = new Date("1900-01-01");
+    const maxDate = new Date("2020-01-01");
+    const enteredDate = new Date(birthdate);
+
+    if (enteredDate < minDate || enteredDate > maxDate || isNaN(enteredDate.getTime())) {
+      alert("Please enter a valid birthdate.");
+      return;
+    }
     // Navigate to next page with state
     navigate("/authentication/select-genres", {
       state: { name, email, password, birthdate }
@@ -83,25 +90,6 @@ function Cover() {
             </ArgonBox>
             <ArgonBox mb={2}>
               <ArgonInput type="date" placeholder="Birthdate" value={birthdate} onChange={e => setBirthdate(e.target.value)}/>
-            </ArgonBox>
-            <ArgonBox display="flex" alignItems="center">
-              <Checkbox defaultChecked />
-              <ArgonTypography
-                variant="button"
-                fontWeight="regular"
-                sx={{ cursor: "pointer", userSelect: "none" }}
-              >
-                &nbsp;&nbsp;I agree to the&nbsp;
-              </ArgonTypography>
-              <ArgonTypography
-                component="a"
-                href="#"
-                variant="button"
-                fontWeight="bold"
-                textGradient
-              >
-                Terms and Conditions
-              </ArgonTypography>
             </ArgonBox>
             <ArgonBox mt={4} mb={1}>
               <ArgonButton 

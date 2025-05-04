@@ -2,16 +2,20 @@ import React, { useState, useEffect } from 'react';
 import {
   Box, Typography, Avatar, Button, CircularProgress,
   Dialog, DialogTitle, DialogContent, DialogActions,
-  Card, CardContent, Divider, Alert, List, 
+  Card, CardContent, Alert, List, 
   ListItem, ListItemAvatar, ListItemText, Slide, Grow,
-  Chip, Grid
+  Chip, Grid, Tabs, Tab
 } from '@mui/material';
-import CasinoIcon from '@mui/icons-material/Casino';
+import {
+  Movie as MovieIcon,
+  Tv as TvIcon,
+  Animation as AnimeIcon,
+  Casino as CasinoIcon
+} from '@mui/icons-material';
 import { apiUrl } from "config/config";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import MovieCard from "components/ScreenCards/moviecard";
-import bgImage from "assets/images/background_images/6.jpg";
 
 const GroupRecommendation = () => {
   const [friends, setFriends] = useState([]);
@@ -20,22 +24,45 @@ const GroupRecommendation = () => {
   const [loading, setLoading] = useState(false);
   const [loadingFriends, setLoadingFriends] = useState(true);
   const [open, setOpen] = useState(false);
+      // ... existing state ...
+  const [excludedItems, setExcludedItems] = useState([]);
+
   const [error, setError] = useState(null);
-  const [rolling, setRolling] = useState(false);
-  const [diceRotation, setDiceRotation] = useState(0);
+  const [diceRotation, setDiceRotation] = useState({
+    movie: 0,
+    show: 0,
+    anime: 0
+  });
+  const [diceAnimating, setDiceAnimating] = useState({
+    movie: false,
+    show: false,
+    anime: false
+  });
   const [excludedMovies, setExcludedMovies] = useState([]);
   const [noMoreOptions, setNoMoreOptions] = useState(false);
+  const [contentType, setContentType] = useState('movie');
 
   // Animate dice rolling
   useEffect(() => {
-    let interval;
-    if (rolling) {
-      interval = setInterval(() => {
-        setDiceRotation(prev => (prev + 120) % 360);
-      }, 300);
-    }
-    return () => clearInterval(interval);
-  }, [rolling]);
+    const intervals = {};
+    
+    ['movie', 'show', 'anime'].forEach(type => {
+      if (diceAnimating[type]) {
+        intervals[type] = setInterval(() => {
+          setDiceRotation(prev => ({
+            ...prev,
+            [type]: (prev[type] + 120) % 360
+          }));
+        }, 300);
+      }
+    });
+
+    return () => {
+      Object.keys(intervals).forEach(type => {
+        clearInterval(intervals[type]);
+      });
+    };
+  }, [diceAnimating]);
 
   // Fetch user's friends
   useEffect(() => {
@@ -60,75 +87,72 @@ const GroupRecommendation = () => {
     setSelectedFriends(prev => 
       prev.includes(friendId) ? prev.filter(id => id !== friendId) : [...prev, friendId]
     );
-    // Reset states when friends change
     setRecommendation(null);
     setExcludedMovies([]);
     setNoMoreOptions(false);
   };
 
-  const getRecommendation = async () => {
-    if (selectedFriends.length === 0) {
-      setError('Please select at least one friend');
-      return;
-    }
-    
-    setRolling(true);
-    setError(null);
-    setNoMoreOptions(false);
-    
-    // Simulate dice rolling animation
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    try {
-      const response = await fetch(`${apiUrl}/group-recommendations`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          friendIds: selectedFriends,
-          exclude: excludedMovies
-        })
-      });
-      
-      const data = await response.json();
-      
-      if (data.type === 'exhausted') {
-        setNoMoreOptions(true);
-      } else if (data.movies && data.movies.length > 0) {
-        setRecommendation(data);
-        setExcludedMovies(prev => [...prev, data.movies[0].content_id]);
+  
+    const getRecommendation = async (type = contentType) => {
+      if (selectedFriends.length === 0) {
+        setError('Please select at least one friend');
+        return;
       }
       
-      setOpen(true);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setRolling(false);
-      setDiceRotation(0);
-    }
-  };
+      setDiceAnimating(prev => ({ ...prev, [type]: true }));
+      setError(null);
+      setNoMoreOptions(false);
+      
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      try {
+        const response = await fetch(`${apiUrl}/group-recommendations`, {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            friendIds: selectedFriends,
+            exclude: excludedItems,
+            contentType: type
+          })
+        });
+        
+        const data = await response.json();
+        
+        if (data.type === 'exhausted') {
+          setNoMoreOptions(true);
+        } else if (data.items && data.items.length > 0) {
+          setRecommendation(data);
+          setExcludedItems(prev => [...prev, data.items[0].content_id]);
+        }
+        
+        setOpen(true);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setDiceAnimating(prev => ({ ...prev, [type]: false }));
+        setDiceRotation(prev => ({ ...prev, [type]: 0 }));
+      }
+    };
+  
+    const handleRollAgain = () => {
+      if (noMoreOptions) return;
+      getRecommendation(contentType); // Explicitly pass current content type
+    };
+  
 
-  const handleRollAgain = () => {
-    if (noMoreOptions) return;
-    getRecommendation();
-  };
 
   const handleCloseDialog = () => {
     setOpen(false);
   };
 
+  const handleContentTypeChange = (event, newValue) => {
+    setContentType(newValue);
+  };
+
   return (
-    <DashboardLayout
-    sx={{
-      backgroundImage: ({ functions: { rgba, linearGradient }, palette: { gradients } }) =>
-        `${linearGradient(
-          rgba(gradients.info.main, 0.1),
-          rgba(gradients.info.state, 0.1)
-        )}, url(${bgImage})`,
-        backgroundPosition: "center",
-        // backgroundSize: "contain",    // ✅ ensures the whole image fits
-    }}>
-      <DashboardNavbar  showSearch={false}/>
+    <DashboardLayout>
+      <DashboardNavbar />
       <Box sx={{ 
         mt: 4, p: 3,
         background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
@@ -138,7 +162,7 @@ const GroupRecommendation = () => {
           fontWeight: 'bold', color: '#3f51b5',
           textAlign: 'center', mb: 4, textShadow: '1px 1px 2px rgba(0,0,0,0.1)'
         }}>
-          🎬 Group Movie Night 🎬
+          🎬 Group Watch Night 🎬
         </Typography>
         
         <Grid container spacing={4}>
@@ -175,7 +199,7 @@ const GroupRecommendation = () => {
                           sx={{ 
                             width: 48, height: 48,
                             border: selectedFriends.includes(friend.user_id) 
-                              ? '2px solidrgb(0, 11, 70)' : '2px solid transparent'
+                              ? '2px solid #3f51b5' : '2px solid transparent'
                           }}
                         />
                       </ListItemAvatar>
@@ -213,9 +237,40 @@ const GroupRecommendation = () => {
               <Typography variant="h6" sx={{ 
                 mb: 4, color: '#3f51b5', textAlign: 'center'
               }}>
-                Ready to find your perfect movie match?
+                Ready to find your perfect watch?
               </Typography>
               
+              {/* Content Type Tabs */}
+              <Tabs
+                value={contentType}
+                onChange={handleContentTypeChange}
+                sx={{ mb: 4 }}
+                variant="fullWidth"
+              >
+                <Tab 
+                  value="movie" 
+                  label="Movies" 
+                  icon={<MovieIcon />}
+                  iconPosition="start"
+                  sx={{ minHeight: 48 }}
+                />
+                <Tab 
+                  value="show" 
+                  label="TV Shows" 
+                  icon={<TvIcon />}
+                  iconPosition="start"
+                  sx={{ minHeight: 48 }}
+                />
+                <Tab 
+                  value="anime" 
+                  label="Anime" 
+                  icon={<AnimeIcon />}
+                  iconPosition="start"
+                  sx={{ minHeight: 48 }}
+                />
+              </Tabs>
+              
+              {/* Dice Section */}
               <Box sx={{ 
                 position: 'relative',
                 width: 150,
@@ -225,23 +280,47 @@ const GroupRecommendation = () => {
                 alignItems: 'center',
                 justifyContent: 'center'
               }}>
-                <CasinoIcon 
-                  sx={{ 
-                    fontSize: 150,
-                    color: '#3f51b5',
-                    transition: 'transform 0.3s ease',
-                    transform: `rotate(${diceRotation}deg)`,
-                    opacity: rolling ? 0.8 : 1
-                  }} 
-                />
+                {contentType === 'movie' && (
+                  <MovieIcon 
+                    sx={{ 
+                      fontSize: 150,
+                      color: '#3f51b5',
+                      transition: 'transform 0.3s ease',
+                      transform: `rotate(${diceRotation.movie}deg)`,
+                      opacity: diceAnimating.movie ? 0.8 : 1
+                    }} 
+                  />
+                )}
+                {contentType === 'show' && (
+                  <TvIcon 
+                    sx={{ 
+                      fontSize: 150,
+                      color: '#3f51b5',
+                      transition: 'transform 0.3s ease',
+                      transform: `rotate(${diceRotation.show}deg)`,
+                      opacity: diceAnimating.show ? 0.8 : 1
+                    }} 
+                  />
+                )}
+                {contentType === 'anime' && (
+                  <AnimeIcon 
+                    sx={{ 
+                      fontSize: 150,
+                      color: '#3f51b5',
+                      transition: 'transform 0.3s ease',
+                      transform: `rotate(${diceRotation.anime}deg)`,
+                      opacity: diceAnimating.anime ? 0.8 : 1
+                    }} 
+                  />
+                )}
               </Box>
               
               <Button
                 variant="contained"
                 size="large"
-                onClick={getRecommendation}
-                disabled={selectedFriends.length === 0 || loading}
-                startIcon={rolling ? null : <CasinoIcon />}
+                onClick={() => getRecommendation()}
+                disabled={selectedFriends.length === 0 || diceAnimating.movie || diceAnimating.show || diceAnimating.anime}
+                startIcon={<CasinoIcon />}
                 sx={{
                   py: 2,
                   px: 4,
@@ -258,7 +337,9 @@ const GroupRecommendation = () => {
                   }
                 }}
               >
-                {rolling ? 'Rolling...' : 'Roll the Movie Dice!'}
+                {diceAnimating.movie || diceAnimating.show || diceAnimating.anime 
+                  ? 'Rolling...' 
+                  : `Roll for ${contentType === 'movie' ? 'Movies' : contentType === 'show' ? 'TV Shows' : 'Anime'}`}
               </Button>
               
               {error && !loading && (
@@ -288,7 +369,7 @@ const GroupRecommendation = () => {
             textAlign: 'center'
           }}>
             <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
-              {noMoreOptions ? 'No More Options' : '🎉 Your Movie Pick! 🎉'}
+              {noMoreOptions ? 'No More Options' : '🎉 Your Watch Pick! 🎉'}
             </Typography>
           </DialogTitle>
           
@@ -303,7 +384,7 @@ const GroupRecommendation = () => {
                   <Typography variant="body1" sx={{ my: 3 }}>
                     We've shown all available options for your group.
                   </Typography>
-                ) : recommendation?.movies?.[0] ? (
+                ) : recommendation?.items?.[0] ? (
                   <>
                     <Typography variant="body1" sx={{ mb: 3 }}>
                       {recommendation.message}
@@ -317,12 +398,12 @@ const GroupRecommendation = () => {
                       }
                     }}>
                       <MovieCard
-                        image={recommendation.movies[0].poster_url}
-                        title={recommendation.movies[0].title}
-                        genres={recommendation.movies[0].genre}
-                        contentId={recommendation.movies[0].content_id}
-                        rating={!isNaN(parseFloat(recommendation.movies[0].avg_rating))
-                          ? parseFloat(recommendation.movies[0].avg_rating).toFixed(1)
+                        image={recommendation.items[0].poster_url}
+                        title={recommendation.items[0].title}
+                        genres={recommendation.items[0].genre}
+                        contentId={recommendation.items[0].content_id}
+                        rating={!isNaN(parseFloat(recommendation.items[0].avg_rating))
+                          ? parseFloat(recommendation.items[0].avg_rating).toFixed(1)
                           : 'N/A'}
                         sx={{ 
                           boxShadow: 3,

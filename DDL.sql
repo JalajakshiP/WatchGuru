@@ -1,4 +1,4 @@
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
     user_id SERIAL PRIMARY KEY,
     username VARCHAR(50) UNIQUE NOT NULL,
     email VARCHAR(100) UNIQUE NOT NULL,
@@ -11,7 +11,7 @@ CREATE TABLE users (
     is_kid_friendly BOOLEAN DEFAULT FALSE
 );
 
-CREATE TABLE content (
+CREATE TABLE IF NOT EXISTS content (
 content_id SERIAL PRIMARY KEY,
 title VARCHAR(255) NOT NULL,
 content_type VARCHAR(20) CHECK (content_type IN ('movie', 'show' , 'drama', 'anime')),
@@ -29,7 +29,7 @@ poster_url TEXT,
 rating_avg FLOAT DEFAULT 0.0
 );
 
-CREATE TABLE friends (
+CREATE TABLE IF NOT EXISTS friends (
     friendship_id SERIAL PRIMARY KEY,
     user_id INT REFERENCES users(user_id) ON DELETE CASCADE,
     friend_id INT REFERENCES users(user_id) ON DELETE CASCADE,
@@ -38,7 +38,7 @@ CREATE TABLE friends (
 );
 
 -- chats 
-CREATE TABLE messages (
+CREATE TABLE IF NOT EXISTS messages (
   message_id SERIAL PRIMARY KEY,
  sender_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
   receiver_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
@@ -49,7 +49,7 @@ CREATE TABLE messages (
 -- chats
 
 -- reviews
-CREATE TABLE Reviews (
+CREATE TABLE IF NOT EXISTS Reviews (
     review_id SERIAL PRIMARY KEY,
     user_id INTEGER NOT NULL,
     content_id INTEGER NOT NULL,
@@ -90,38 +90,38 @@ predicted_rating FLOAT NOT NULL
 );
 -- collaborative recommendations
 CREATE TABLE IF NOT EXISTS svd_user_factors (
-user_id INT PRIMARY KEY REFERENCES users(user_id),
+user_id INT PRIMARY KEY REFERENCES users(user_id) ON DELETE CASCADE ,
 factors FLOAT[] NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS svd_item_factors (
-content_id INT PRIMARY KEY REFERENCES content(content_id),
+content_id INT PRIMARY KEY REFERENCES content(content_id) ON DELETE CASCADE,
 factors FLOAT[] NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS movie_similarity (
-movie_id1 INT REFERENCES content(content_id),
-movie_id2 INT REFERENCES content(content_id),
+movie_id1 INT REFERENCES content(content_id) ON DELETE CASCADE,
+movie_id2 INT REFERENCES content(content_id) ON DELETE CASCADE,
 similarity FLOAT NOT NULL,
 PRIMARY KEY (movie_id1, movie_id2)
 );
 
 CREATE TABLE IF NOT EXISTS user_similarity (
-user_id1 INT REFERENCES users(user_id),
-user_id2 INT REFERENCES users(user_id),
+user_id1 INT REFERENCES users(user_id) ON DELETE CASCADE,
+user_id2 INT REFERENCES users(user_id) ON DELETE CASCADE,
 similarity FLOAT NOT NULL,
 PRIMARY KEY (user_id1, user_id2)
 );
 
 CREATE TABLE IF NOT EXISTS likes (
-  user_id INTEGER REFERENCES users(user_id)ON DELETE CASCADE,
-  content_id INTEGER REFERENCES content(content_id)ON DELETE CASCADE,
+  user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
+  content_id INTEGER REFERENCES content(content_id) ON DELETE CASCADE,
   PRIMARY KEY (user_id, content_id)
 );
 --liked ones
 CREATE TABLE IF NOT EXISTS watchlist (
-  user_id INTEGER REFERENCES users(user_id)ON DELETE CASCADE,
-  content_id INTEGER REFERENCES content(content_id)ON DELETE CASCADE,
+  user_id INTEGER REFERENCES users(user_id) ON DELETE CASCADE,
+  content_id INTEGER REFERENCES content(content_id) ON DELETE CASCADE,
   PRIMARY KEY (user_id, content_id)
 );
 --watchlist

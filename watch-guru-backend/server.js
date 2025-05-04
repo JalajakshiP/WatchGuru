@@ -19,7 +19,7 @@ const pool = new Pool({
   user: 'postgres',
   host: 'localhost',
   database: 'watchguru',
-  password: '12345678',
+  password: 'chocolate',
   port: 5432,
 });
 
@@ -69,6 +69,7 @@ app.post('/signup', async (req, res) => {
   if (!name || !email || !password || birthdate === undefined) {
     return res.status(400).json({ message: "Error: All fields are required (username, email, password, date of birth)." });
   }
+ 
   if (!genres || !Array.isArray(genres) || genres.length < 3) {
     return res.status(400).json({ message: "Please select at least 3 favorite genres." });
   }
@@ -163,34 +164,6 @@ app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
 });
 
-// app.get("/recommendations", isAuthenticated, async (req, res) => {
-//   try {
-//     const userId = req.session.userId;
-
-//     // Fetch the user's favorite genres
-//     const userGenresResult = await pool.query(
-//       "SELECT favorite_genres FROM users WHERE user_id = $1",
-//       [userId]
-//     );
-
-//     if (userGenresResult.rows.length === 0) {
-//       return res.status(404).json({ message: "User not found" });
-//     }
-
-//     const userGenres = userGenresResult.rows[0].favorite_genres;
-
-//     // Fetch movie recommendations based on the user's favorite genres
-//     const recommendationsResult = await pool.query(
-//       `SELECT DISTINCT ON (title) content_id, title, poster_url, genre FROM content WHERE genre && $1::text[]`,
-//       [userGenres]
-//     );
-
-//     res.status(200).json({data: recommendationsResult.rows});
-//   } catch (error) {
-//     console.error("Error fetching recommendations:", error);
-//     res.status(500).json({ message: "Internal server error" });
-//   }
-// });
 
 // 1. SVD-Based Collaborative Filtering
 async function trainSVDFiltering() {
@@ -429,12 +402,13 @@ app.get("/recommendations", isAuthenticated, async (req, res) => {
     const userId = req.session.userId;
 
     // Get all recommendation types
-    const [contentBased, itemCF, userCF, svdBased, popular] = await Promise.all([
+    const [contentBased, itemCF, userCF, svdBased, popular,friendsTopRated] = await Promise.all([
       getContentBasedRecs(userId),
       getItemBasedCFRecs(userId),
       getUserBasedCFRecs(userId),
       getSVDRecs(userId),
-      getPopularRecs(userId)
+      getPopularRecs(userId),
+      getFriendsTopRatedRecs(userId),
     ]);
 
     // Process each recommendation type
@@ -449,6 +423,7 @@ app.get("/recommendations", isAuthenticated, async (req, res) => {
         .map(rec => ({ ...rec, recommendationType: type }))
         .slice(0, 10); // Limit to 10 per section
     };
+  
 
     const sections = [
       {
@@ -470,6 +445,11 @@ app.get("/recommendations", isAuthenticated, async (req, res) => {
         title: "Because You Liked Similar Content",
         type: "item",
         movies: processSection(itemCF, 'item')
+      },
+      {
+        title: "Top Rated By Your Friends",
+        type: "friends",
+        movies: processSection(friendsTopRated, 'friends')
       },
       {
         title: "Our Special Picks For You",
@@ -521,61 +501,84 @@ app.get("/recommendations", isAuthenticated, async (req, res) => {
 });
 app.post("/group-recommendations", isAuthenticated, async (req, res) => {
   try {
-    const { friendIds, exclude = [] } = req.body; // Add exclude parameter
+    const { friendIds, exclude = [], contentType } = req.body;
     const userId = req.session.userId;
     const allUserIds = [userId, ...friendIds];
+    console.log(contentType)
+    // Validate content type[]
+    const validContentTypes = ['movie', 'show', 'anime'];
+    const filteredContentType = validContentTypes.includes(contentType) ? contentType : null;
 
-    // 1. Get recommendations for all group members
-    const allRecommendations = await Promise.all(
-      allUserIds.map(userId => getCombinedRecommendations(userId))
+    // 1. First check for common watchlist items (filtered by type)
+    const commonWatchlistItems = await getCommonWatchlistItems(allUserIds, filteredContentType);
+    const availableCommonWatchlist = commonWatchlistItems.filter(
+      item => !exclude.includes(item.content_id)
     );
 
-    // 2. Find intersection of all recommendations
-    let commonRecommendations = findCommonRecommendations(allRecommendations)
-      .filter(movie => !exclude.includes(movie.content_id));
+    if (availableCommonWatchlist.length > 0) {
+      return res.json({
+        type: 'common-watchlist',
+        content_type: availableCommonWatchlist[0].content_type,
+        message: `This ${availableCommonWatchlist[0].content_type} is in all group members' watchlists`,
+        items: [availableCommonWatchlist[0]]
+      });
+    }
 
-    // 3. If no common recommendations, find content with highest overlap
+    // 2. Get recommendations for all group members (strictly filtered by content type)
+    const allRecommendations = await Promise.all(
+      allUserIds.map(userId => getCombinedRecommendations(userId, filteredContentType))
+    );
+
+    // 3. Find intersection of all recommendations
+    let commonRecommendations = findCommonRecommendations(allRecommendations)
+      .filter(item => !exclude.includes(item.content_id));
+
+    // 4. If no common recommendations, find content with highest overlap
     if (commonRecommendations.length === 0) {
       const overlapRecommendations = findRecommendationOverlap(allRecommendations)
-        .filter(movie => !exclude.includes(movie.content_id));
+        .filter(item => !exclude.includes(item.content_id));
       
       if (overlapRecommendations.length > 0) {
         return res.json({
           type: 'overlap',
-          message: `These movies were liked by ${overlapRecommendations[0].overlap} of ${allUserIds.length} members`,
-          movies: [overlapRecommendations[0]] // Return just the top one
+          content_type: filteredContentType,
+          message: `This ${filteredContentType} was liked by ${overlapRecommendations[0].overlap} of ${allUserIds.length} members`,
+          items: [overlapRecommendations[0]]
         });
       }
     }
 
-    // 4. If still nothing, get one popular movie not in exclude list
+    // 5. If still nothing, get one popular item not in exclude list
     if (commonRecommendations.length === 0) {
-      const popular = await getPopularRecs(userId);
-      const availablePopular = popular.filter(movie => 
-        !exclude.includes(movie.content_id)
+      const popular = await getPopularRecs(userId, filteredContentType);
+      const availablePopular = popular.filter(item => 
+        !exclude.includes(item.content_id)
       );
       
       if (availablePopular.length > 0) {
         return res.json({
           type: 'popular',
-          message: 'No common favorites found - here is a popular choice',
-          movies: [availablePopular[0]] // Return just one
+          content_type: filteredContentType,
+          message: `No common favorites found - here's a popular ${filteredContentType}`,
+          items: [availablePopular[0]]
         });
       }
       
-      // 5. If absolutely nothing left
+      // 6. If absolutely nothing left
       return res.json({
         type: 'exhausted',
-        message: 'No more recommendations available for your group',
-        movies: []
+        content_type: filteredContentType,
+        message: `No more ${filteredContentType} recommendations available for your group`,
+        items: []
       });
     }
 
     // Return one common recommendation
     res.json({
       type: 'common',
-      message: 'This movie was recommended for all group members',
-      movies: [commonRecommendations[0]] // Return just one
+      content_type: filteredContentType,
+      message: `This ${filteredContentType} was recommended for all group members`,
+      items: [commonRecommendations[0]]
     });
 
   } catch (error) {
@@ -586,9 +589,67 @@ app.post("/group-recommendations", isAuthenticated, async (req, res) => {
     });
   }
 });
+async function getCommonWatchlistItems(userIds, contentType = null) {
+  if (userIds.length === 0) return [];
 
-// Helper function to get combined recommendations for a single user
-async function getCombinedRecommendations(userId) {
+  let query = `
+    SELECT c.content_id, c.title, c.poster_url, c.genre, c.content_type
+    FROM watchlist w
+    JOIN content c ON w.content_id = c.content_id
+    WHERE w.user_id = $1
+    ${contentType ? 'AND c.content_type = $2' : ''}
+  `;
+
+  console.log("\n=== WATCHLIST ANALYSIS ===");
+  
+  // Get watchlist items for all users (for debugging)
+  const allUserWatchlists = [];
+  
+  for (let i = 0; i < userIds.length; i++) {
+    const userParams = [userIds[i]];
+    if (contentType) userParams.push(contentType);
+    
+    const { rows: userItems } = await pool.query(query, userParams);
+    allUserWatchlists.push({
+      userId: userIds[i],
+      items: userItems
+    });
+    
+    console.log(`\nUser ${userIds[i]} watchlist (${contentType || 'all types'}):`);
+    console.log(userItems.map(item => `${item.title} (${item.content_type})`).join('\n'));
+  }
+
+  // Get common items (original logic)
+  const firstUserParams = [userIds[0]];
+  if (contentType) firstUserParams.push(contentType);
+  const { rows: commonItems } = await pool.query(query, firstUserParams);
+
+  for (let i = 1; i < userIds.length; i++) {
+    if (commonItems.length === 0) break;
+    
+    const userParams = [userIds[i]];
+    if (contentType) userParams.push(contentType);
+    
+    const { rows: userItems } = await pool.query(query, userParams);
+    const userItemsSet = new Set(userItems.map(item => item.content_id));
+    
+    for (let j = commonItems.length - 1; j >= 0; j--) {
+      if (!userItemsSet.has(commonItems[j].content_id)) {
+        commonItems.splice(j, 1);
+      }
+    }
+  }
+
+  console.log('\nFinal common watchlist items:');
+  console.log(commonItems.map(item => `${item.title} (${item.content_type})`).join('\n') || 'No common items found');
+  console.log("=======================\n");
+
+  return commonItems;
+}
+// Updated helper function to get combined recommendations for a single user
+// Updated helper function to get combined recommendations for a single user
+async function getCombinedRecommendations(userId, contentType = null) {
+  // Get all recommendations without content type filtering
   const [contentBased, itemCF, userCF, svdBased, popular] = await Promise.all([
     getContentBasedRecs(userId),
     getItemBasedCFRecs(userId),
@@ -601,40 +662,29 @@ async function getCombinedRecommendations(userId) {
   const allRecs = [...contentBased, ...itemCF, ...userCF, ...svdBased, ...popular];
   const seen = new Set();
   
-  return allRecs.filter(rec => {
+  // First deduplicate
+  const uniqueRecs = allRecs.filter(rec => {
     if (seen.has(rec.content_id)) return false;
     seen.add(rec.content_id);
     return true;
   });
-}
 
-// Find recommendations that appear in all users' lists
-function findCommonRecommendations(allRecommendations) {
-  if (allRecommendations.length === 0) return [];
+  // If no content type filter needed, return all
+  if (!contentType) return uniqueRecs;
+
+  // Get content types for these recommendations in a single query
+  const contentIds = uniqueRecs.map(rec => rec.content_id);
+  if (contentIds.length === 0) return [];
   
-  // Create a map of content_id to count
-  const recommendationCounts = new Map();
+  const { rows } = await pool.query(
+    'SELECT content_id FROM content WHERE content_id = ANY($1) AND content_type = $2',
+    [contentIds, contentType]
+  );
   
-  allRecommendations.forEach(userRecs => {
-    const userRecsSet = new Set(userRecs.map(r => r.content_id));
-    userRecsSet.forEach(contentId => {
-      recommendationCounts.set(contentId, (recommendationCounts.get(contentId) || 0) + 1);
-    });
-  });
+  const validIds = new Set(rows.map(r => r.content_id));
   
-  // Filter for content recommended to all users
-  const commonRecs = [];
-  const totalUsers = allRecommendations.length;
-  
-  recommendationCounts.forEach((count, contentId) => {
-    if (count === totalUsers) {
-      // Find the first occurrence to get details
-      const rec = allRecommendations[0].find(r => r.content_id === contentId);
-      commonRecs.push(rec);
-    }
-  });
-  
-  return commonRecs;
+  // Filter by content type
+  return uniqueRecs.filter(rec => validIds.has(rec.content_id));
 }
 
 // Find recommendations with highest overlap when no perfect matches exist
@@ -658,6 +708,36 @@ function findRecommendationOverlap(allRecommendations) {
       overlapPercentage: Math.round((count / allRecommendations.length) * 100)
     }))
     .sort((a, b) => b.overlap - a.overlap);
+}
+// Find recommendations that appear in all users' lists
+function findCommonRecommendations(allRecommendations) {
+  if (allRecommendations.length === 0) return [];
+  
+  // Create a map of content_id to count
+  const recommendationCounts = new Map();
+  
+  allRecommendations.forEach(userRecs => {
+    const userRecsSet = new Set(userRecs.map(r => r.content_id));
+    userRecsSet.forEach(contentId => {
+      recommendationCounts.set(contentId, (recommendationCounts.get(contentId) || 0) + 1);
+    });
+  });
+  
+  // Filter for content recommended to all users
+  const commonRecs = [];
+  const totalUsers = allRecommendations.length;
+  
+  recommendationCounts.forEach((count, contentId) => {
+    if (count === totalUsers) {
+      // Find the first occurrence to get details
+      const rec = allRecommendations[0].find(r => r.content_id === contentId);
+      if (rec) {
+        commonRecs.push(rec);
+      }
+    }
+  });
+  
+  return commonRecs;
 }
 
 // Helper functions for recommendations
@@ -2300,5 +2380,55 @@ app.post('/votes', isAuthenticated, async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 });
-
+async function getFriendsTopRatedRecs(userId) {
+  try {
+    const { rows } = await pool.query(
+      `SELECT 
+        c.content_id, 
+        c.title, 
+        c.poster_url, 
+        c.genre,
+        'friends_top_rated' AS type,
+        AVG(r.rating) AS avg_rating,
+        COUNT(r.review_id) AS rating_count,
+        EXISTS (
+          SELECT 1 
+          FROM likes 
+          WHERE user_id = $1 AND content_id = c.content_id
+        ) AS liked,
+        EXISTS (
+          SELECT 1 
+          FROM watchlist 
+          WHERE user_id = $1 AND content_id = c.content_id
+        ) AS inwatchlist,
+        EXISTS (
+          SELECT 1 
+          FROM watch_history 
+          WHERE user_id = $1 AND content_id = c.content_id
+        ) AS watched
+      FROM content c
+      JOIN reviews r ON c.content_id = r.content_id
+      WHERE r.user_id IN (
+        -- Get all accepted friends (both directions)
+        SELECT CASE 
+          WHEN f.user_id = $1 THEN f.friend_id
+          WHEN f.friend_id = $1 THEN f.user_id
+        END AS friend_id
+        FROM friends f
+        WHERE (f.user_id = $1 OR f.friend_id = $1)
+        AND f.status = 'accepted'
+      )
+      AND r.user_id != $1  -- Exclude the user's own ratings
+      GROUP BY c.content_id, c.title, c.poster_url, c.genre
+      HAVING AVG(r.rating) > 0
+      ORDER BY avg_rating DESC, rating_count DESC
+      LIMIT 10`,
+      [userId]
+    );
+    return rows;
+  } catch (error) {
+    console.error("Error in friends top rated recommendations:", error);
+    return [];
+  }
+}
 
